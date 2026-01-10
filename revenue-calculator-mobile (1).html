@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+    <html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content=  "yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Revenue Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 16px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .panel {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #ffffff;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .currency-symbol {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            font-size: 16px;
+            font-weight: 300;
+            pointer-events: none;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 12px 14px 32px;
+            background: #0a0a0a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 300;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #404040;
+        }
+
+        input::placeholder {
+            color: #404040;
+        }
+
+        .results {
+            display: grid;
+            gap: 8px;
+        }
+
+        .result-item {
+            background: #0a0a0a;
+            padding: 12px 14px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #2a2a2a;
+        }
+
+        .result-label {
+            font-size: 12px;
+            color: #888;
+            font-weight: 500;
+        }
+
+        .result-value {
+            font-size: 15px;
+            color: #ffffff;
+            font-weight: 400;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .result-input-wrapper {
+            position: relative;
+            width: 120px;
+        }
+
+        .result-input-wrapper .currency-symbol {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            font-size: 16px;
+            font-weight: 300;
+            pointer-events: none;
+        }
+
+        .result-input {
+            width: 100%;
+            padding: 14px 12px 14px 32px;
+            background: #0a0a0a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 300;
+            text-align: right;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .result-input:focus {
+            outline: none;
+            border-color: #404040;
+        }
+
+        .result-sub {
+            font-size: 10px;
+            color: #555;
+            margin-top: 2px;
+        }
+
+        .offerings-grid {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .offering-item {
+            background: #0a0a0a;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+            position: relative;
+        }
+
+        .offering-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 8px;
+        }
+
+        .offering-name {
+            font-size: 12px;
+            color: #888;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .price-input-wrapper {
+            position: relative;
+            width: 100px;
+        }
+
+        .price-input-wrapper .currency-symbol {
+            font-size: 16px;
+            font-weight: 300;
+            left: 12px;
+        }
+
+        .price-input {
+            width: 100%;
+            padding: 14px 12px 14px 32px;
+            background: #0a0a0a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 300;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .price-input:focus {
+            outline: none;
+            border-color: #404040;
+        }
+
+        .sales-needed {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 8px;
+            border-top: 1px solid #2a2a2a;
+            margin-bottom: 6px;
+        }
+
+        .sales-needed:last-child {
+            margin-bottom: 0;
+            border-top: none;
+            padding-top: 4px;
+        }
+
+        .sales-label {
+            font-size: 10px;
+            color: #555;
+        }
+
+        .sales-value {
+            font-size: 14px;
+            color: #4a9eff;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .sales-value.monthly {
+            color: #7cb342;
+        }
+
+        .add-button {
+            width: 100%;
+            padding: 12px;
+            background: #0a0a0a;
+            border: 1px dashed #2a2a2a;
+            border-radius: 8px;
+            color: #666;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .add-button:active {
+            background: #0f0f0f;
+            border-color: #404040;
+        }
+
+        .delete-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: transparent;
+            border: none;
+            color: #555;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px 8px;
+            line-height: 1;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .delete-button:active {
+            color: #ff4444;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            .container {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .panel {
+                padding: 16px;
+            }
+
+            h1 {
+                font-size: 15px;
+                margin-bottom: 14px;
+            }
+
+            input {
+                font-size: 16px;
+                padding: 12px 12px 12px 32px;
+            }
+
+            .price-input {
+                font-size: 16px;
+                padding: 12px 12px 12px 32px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Revenue Calculator -->
+        <div class="panel">
+            <h1>Revenue Calculator</h1>
+            
+            <div class="input-group">
+                <label for="annual">Annual Goal</label>
+                <div class="input-wrapper">
+                    <span class="currency-symbol">$</span>
+                    <input 
+                        type="number" 
+                        inputmode="decimal"
+                        id="annual" 
+                        placeholder="1000000"
+                        autocomplete="off"
+                    >
+                </div>
+            </div>
+
+            <div class="results">
+                <div class="result-item">
+                    <div>
+                        <div class="result-label">Yearly</div>
+                    </div>
+                    <div class="result-input-wrapper">
+                        <span class="currency-symbol">$</span>
+                        <input 
+                            type="number" 
+                            inputmode="decimal"
+                            id="yearly" 
+                            class="result-input"
+                            placeholder="0"
+                        >
+                    </div>
+                </div>
+
+                <div class="result-item">
+                    <div>
+                        <div class="result-label">Monthly</div>
+                        <div class="result-sub">12 months</div>
+                    </div>
+                    <div class="result-input-wrapper">
+                        <span class="currency-symbol">$</span>
+                        <input 
+                            type="number" 
+                            inputmode="decimal"
+                            id="monthly" 
+                            class="result-input"
+                            placeholder="0"
+                        >
+                    </div>
+                </div>
+
+                <div class="result-item">
+                    <div>
+                        <div class="result-label">Weekly</div>
+                        <div class="result-sub">52 weeks</div>
+                    </div>
+                    <div class="result-input-wrapper">
+                        <span class="currency-symbol">$</span>
+                        <input 
+                            type="number" 
+                            inputmode="decimal"
+                            id="weekly" 
+                            class="result-input"
+                            placeholder="0"
+                        >
+                    </div>
+                </div>
+
+                <div class="result-item">
+                    <div>
+                        <div class="result-label">Daily</div>
+                        <div class="result-sub">365 days</div>
+                    </div>
+                    <div class="result-value" id="daily">$0</div>
+                </div>
+
+                <div class="result-item">
+                    <div>
+                        <div class="result-label">Hourly</div>
+                        <div class="result-sub">8h/day, 5d/week</div>
+                    </div>
+                    <div class="result-value" id="hourly">$0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products -->
+        <div class="panel">
+            <h1>Products</h1>
+            
+            <div class="offerings-grid" id="products-grid">
+                <div class="offering-item">
+                    <button class="delete-button" type="button" data-type="product">×</button>
+                    <div class="offering-header">
+                        <span class="offering-name">Product 1</span>
+                        <div class="price-input-wrapper">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" inputmode="decimal" class="price-input product-price" placeholder="500">
+                        </div>
+                    </div>
+                    <div class="sales-needed">
+                        <span class="sales-label">Yearly sales</span>
+                        <span class="sales-value product-sales">0</span>
+                    </div>
+                    <div class="sales-needed">
+                        <span class="sales-label">Monthly sales</span>
+                        <span class="sales-value monthly product-sales-monthly">0</span>
+                    </div>
+                </div>
+
+                <div class="offering-item">
+                    <button class="delete-button" type="button" data-type="product">×</button>
+                    <div class="offering-header">
+                        <span class="offering-name">Product 2</span>
+                        <div class="price-input-wrapper">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" inputmode="decimal" class="price-input product-price" placeholder="300">
+                        </div>
+                    </div>
+                    <div class="sales-needed">
+                        <span class="sales-label">Yearly sales</span>
+                        <span class="sales-value product-sales">0</span>
+                    </div>
+                    <div class="sales-needed">
+                        <span class="sales-label">Monthly sales</span>
+                        <span class="sales-value monthly product-sales-monthly">0</span>
+                    </div>
+                </div>
+
+                <div class="offering-item">
+                    <button class="delete-button" type="button" data-type="product">×</button>
+                    <div class="offering-header">
+                        <span class="offering-name">Product 3</span>
+                        <div class="price-input-wrapper">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" inputmode="decimal" class="price-input product-price" placeholder="100">
+                        </div>
+                    </div>
+                    <div class="sales-needed">
+                        <span class="sales-label">Yearly sales</span>
+                        <span class="sales-value product-sales">0</span>
+                    </div>
+                    <div class="sales-needed">
+                        <span class="sales-label">Monthly sales</span>
+                        <span class="sales-value monthly product-sales-monthly">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="add-button" type="button" data-type="product">
+                <span>+</span> Add Product
+            </button>
+        </div>
+
+        <!-- Services -->
+        <div class="panel">
+            <h1>Services</h1>
+            
+            <div class="offerings-grid" id="services-grid">
+                <div class="offering-item">
+                    <button class="delete-button" type="button" data-type="service">×</button>
+                    <div class="offering-header">
+                        <span class="offering-name">Service 1</span>
+                        <div class="price-input-wrapper">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" inputmode="decimal" class="price-input service-price" placeholder="5000">
+                        </div>
+                    </div>
+                    <div class="sales-needed">
+                        <span class="sales-label">Yearly sales</span>
+                        <span class="sales-value service-sales">0</span>
+                    </div>
+                    <div class="sales-needed">
+                        <span class="sales-label">Monthly sales</span>
+                        <span class="sales-value monthly service-sales-monthly">0</span>
+                    </div>
+                </div>
+
+                <div class="offering-item">
+                    <button class="delete-button" type="button" data-type="service">×</button>
+                    <div class="offering-header">
+                        <span class="offering-name">Service 2</span>
+                        <div class="price-input-wrapper">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" inputmode="decimal" class="price-input service-price" placeholder="3000">
+                        </div>
+                    </div>
+                    <div class="sales-needed">
+                        <span class="sales-label">Yearly sales</span>
+                        <span class="sales-value service-sales">0</span>
+                    </div>
+                    <div class="sales-needed">
+                        <span class="sales-label">Monthly sales</span>
+                        <span class="sales-value monthly service-sales-monthly">0</span>
+                    </div>
+                </div>
+
+                <div class="offering-item">
+                    <button class="delete-button" type="button" data-type="service">×</button>
+                    <div class="offering-header">
+                        <span class="offering-name">Service 3</span>
+                        <div class="price-input-wrapper">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" inputmode="decimal" class="price-input service-price" placeholder="1500">
+                        </div>
+                    </div>
+                    <div class="sales-needed">
+                        <span class="sales-label">Yearly sales</span>
+                        <span class="sales-value service-sales">0</span>
+                    </div>
+                    <div class="sales-needed">
+                        <span class="sales-label">Monthly sales</span>
+                        <span class="sales-value monthly service-sales-monthly">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="add-button" type="button" data-type="service">
+                <span>+</span> Add Service
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('annual');
+        const yearlyInput = document.getElementById('yearly');
+        const monthlyInput = document.getElementById('monthly');
+        const weeklyInput = document.getElementById('weekly');
+        const dailyEl = document.getElementById('daily');
+        const hourlyEl = document.getElementById('hourly');
+
+        let serviceCounter = 3;
+        let productCounter = 3;
+        let isUpdating = false;
+
+        function formatNumber(num) {
+            return num.toLocaleString('en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function formatInteger(num) {
+            return Math.ceil(num).toLocaleString('en-US');
+        }
+
+        function calculate() {
+            if (isUpdating) return;
+            isUpdating = true;
+
+            const annual = parseFloat(input.value) || 0;
+            
+            console.log('Calculating with annual:', annual);
+
+            const yearly = annual;
+            const monthly = annual / 12;
+            const weekly = annual / 52;
+            const daily = annual / 365;
+            const hourly = annual / (52 * 5 * 8);
+
+            yearlyInput.value = yearly || '';
+            monthlyInput.value = monthly ? monthly.toFixed(2) : '';
+            weeklyInput.value = weekly ? weekly.toFixed(2) : '';
+            dailyEl.textContent = '$' + formatNumber(daily);
+            hourlyEl.textContent = '$' + formatNumber(hourly);
+
+            calculateOfferings();
+            isUpdating = false;
+        }
+
+        function calculateFromYearly() {
+            if (isUpdating) return;
+            isUpdating = true;
+
+            const yearly = parseFloat(yearlyInput.value) || 0;
+            const annual = yearly;
+
+            input.value = annual || '';
+            monthlyInput.value = annual ? (annual / 12).toFixed(2) : '';
+            weeklyInput.value = annual ? (annual / 52).toFixed(2) : '';
+            dailyEl.textContent = '$' + formatNumber(annual / 365);
+            hourlyEl.textContent = '$' + formatNumber(annual / (52 * 5 * 8));
+
+            calculateOfferings();
+            isUpdating = false;
+        }
+
+        function calculateFromMonthly() {
+            if (isUpdating) return;
+            isUpdating = true;
+
+            const monthly = parseFloat(monthlyInput.value) || 0;
+            const annual = monthly * 12;
+
+            input.value = annual || '';
+            yearlyInput.value = annual || '';
+            weeklyInput.value = annual ? (annual / 52).toFixed(2) : '';
+            dailyEl.textContent = '$' + formatNumber(annual / 365);
+            hourlyEl.textContent = '$' + formatNumber(annual / (52 * 5 * 8));
+
+            calculateOfferings();
+            isUpdating = false;
+        }
+
+        function calculateFromWeekly() {
+            if (isUpdating) return;
+            isUpdating = true;
+
+            const weekly = parseFloat(weeklyInput.value) || 0;
+            const annual = weekly * 52;
+
+            input.value = annual || '';
+            yearlyInput.value = annual || '';
+            monthlyInput.value = annual ? (annual / 12).toFixed(2) : '';
+            dailyEl.textContent = '$' + formatNumber(annual / 365);
+            hourlyEl.textContent = '$' + formatNumber(annual / (52 * 5 * 8));
+
+            calculateOfferings();
+            isUpdating = false;
+        }
+
+        function calculateOfferings() {
+            const annual = parseFloat(input.value) || 0;
+            const monthly = annual / 12;
+            
+            console.log('Calculating offerings with annual:', annual, 'monthly:', monthly);
+
+            const servicePriceInputs = document.querySelectorAll('.service-price');
+            const serviceSalesEls = document.querySelectorAll('.service-sales');
+            const serviceSalesMonthlyEls = document.querySelectorAll('.service-sales-monthly');
+            
+            console.log('Service inputs found:', servicePriceInputs.length);
+            
+            servicePriceInputs.forEach((priceInput, index) => {
+                const price = parseFloat(priceInput.value) || 0;
+                const salesNeeded = price > 0 ? annual / price : 0;
+                const monthlySalesNeeded = price > 0 ? monthly / price : 0;
+                console.log('Service', index, '- Price:', price, 'Yearly sales:', salesNeeded, 'Monthly sales:', monthlySalesNeeded);
+                if (serviceSalesEls[index]) {
+                    serviceSalesEls[index].textContent = formatInteger(salesNeeded);
+                }
+                if (serviceSalesMonthlyEls[index]) {
+                    serviceSalesMonthlyEls[index].textContent = formatInteger(monthlySalesNeeded);
+                }
+            });
+
+            const productPriceInputs = document.querySelectorAll('.product-price');
+            const productSalesEls = document.querySelectorAll('.product-sales');
+            const productSalesMonthlyEls = document.querySelectorAll('.product-sales-monthly');
+            
+            console.log('Product inputs found:', productPriceInputs.length);
+            
+            productPriceInputs.forEach((priceInput, index) => {
+                const price = parseFloat(priceInput.value) || 0;
+                const salesNeeded = price > 0 ? annual / price : 0;
+                const monthlySalesNeeded = price > 0 ? monthly / price : 0;
+                console.log('Product', index, '- Price:', price, 'Yearly sales:', salesNeeded, 'Monthly sales:', monthlySalesNeeded);
+                if (productSalesEls[index]) {
+                    productSalesEls[index].textContent = formatInteger(salesNeeded);
+                }
+                if (productSalesMonthlyEls[index]) {
+                    productSalesMonthlyEls[index].textContent = formatInteger(monthlySalesNeeded);
+                }
+            });
+        }
+
+        function addOffering(type) {
+            const grid = type === 'service' ? document.getElementById('services-grid') : document.getElementById('products-grid');
+            const counter = type === 'service' ? ++serviceCounter : ++productCounter;
+            const className = type === 'service' ? 'service' : 'product';
+            const name = type === 'service' ? 'Service' : 'Product';
+            
+            const item = document.createElement('div');
+            item.className = 'offering-item';
+            item.innerHTML = `
+                <button class="delete-button" type="button" data-type="${type}">×</button>
+                <div class="offering-header">
+                    <span class="offering-name">${name} ${counter}</span>
+                    <div class="price-input-wrapper">
+                        <span class="currency-symbol">$</span>
+                        <input type="number" inputmode="decimal" class="price-input ${className}-price" placeholder="0">
+                    </div>
+                </div>
+                <div class="sales-needed">
+                    <span class="sales-label">Yearly sales</span>
+                    <span class="sales-value ${className}-sales">0</span>
+                </div>
+                <div class="sales-needed">
+                    <span class="sales-label">Monthly sales</span>
+                    <span class="sales-value monthly ${className}-sales-monthly">0</span>
+                </div>
+            `;
+            
+            grid.appendChild(item);
+            
+            const newInput = item.querySelector('.price-input');
+            newInput.addEventListener('input', calculateOfferings);
+            
+            calculateOfferings();
+        }
+
+        function deleteOffering(button) {
+            const type = button.dataset.type;
+            const grid = type === 'service' ? document.getElementById('services-grid') : document.getElementById('products-grid');
+            const items = grid.querySelectorAll('.offering-item');
+            
+            if (items.length > 1) {
+                button.closest('.offering-item').remove();
+                calculateOfferings();
+            }
+        }
+
+        // Event listeners
+        input.addEventListener('input', calculate);
+        input.addEventListener('change', calculate);
+        input.addEventListener('keyup', calculate);
+
+        yearlyInput.addEventListener('input', calculateFromYearly);
+        yearlyInput.addEventListener('change', calculateFromYearly);
+        
+        monthlyInput.addEventListener('input', calculateFromMonthly);
+        monthlyInput.addEventListener('change', calculateFromMonthly);
+        
+        weeklyInput.addEventListener('input', calculateFromWeekly);
+        weeklyInput.addEventListener('change', calculateFromWeekly);
+
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('price-input')) {
+                calculateOfferings();
+            }
+        });
+
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('price-input')) {
+                calculateOfferings();
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('add-button')) {
+                addOffering(e.target.dataset.type);
+            } else if (e.target.classList.contains('delete-button')) {
+                deleteOffering(e.target);
+            }
+        });
+
+        // Initialize
+        setTimeout(calculate, 100);
+    </script>
+</body>
+</html>
