@@ -178,7 +178,7 @@ export default function RevenueCalculator() {
             {/* Revenue Calculator Panel */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Revenue Calculator</CardTitle>
+                <CardTitle className="text-base">Revenue Metrix</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
