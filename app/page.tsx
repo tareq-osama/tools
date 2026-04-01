@@ -20,8 +20,8 @@ const tools = [
     title: 'Profit Margin Calculator',
     description: 'Calculate profit margins, markup, and break-even points',
     icon: IconCoin,
-    href: '#',
-    available: false,
+    href: '/profit-margin-calculator',
+    available: true,
   },
   {
     title: 'ROI Calculator',
