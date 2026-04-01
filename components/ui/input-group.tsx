@@ -136,6 +136,7 @@ function InputGroupInput({
       data-slot="input-group-control"
       className={cn(
         'flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent',
+        '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
         className,
       )}
       {...props}

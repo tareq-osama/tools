@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useTheme } from 'next-themes'
-import { IconSun, IconMoon } from '@tabler/icons-react'
+import { SunIcon, MoonIcon } from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/button'
 
 export function ThemeToggle() {
@@ -17,7 +17,7 @@ export function ThemeToggle() {
   if (!mounted) {
     return (
       <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Toggle theme">
-        <IconSun className="h-4 w-4" />
+        <SunIcon className="h-4 w-4" />
       </Button>
     )
   }
@@ -33,11 +33,10 @@ export function ThemeToggle() {
       aria-label="Toggle theme"
     >
       {isDark ? (
-        <IconSun className="h-4 w-4" />
+        <SunIcon className="h-4 w-4" />
       ) : (
-        <IconMoon className="h-4 w-4" />
+        <MoonIcon className="h-4 w-4" />
       )}
     </Button>
   )
 }
-

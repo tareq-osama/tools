@@ -1,12 +1,12 @@
 "use client"
 
+import * as React from "react"
 import {
-  IconDots,
-  IconFolder,
-  IconShare3,
-  IconTrash,
-  type Icon,
-} from "@tabler/icons-react"
+  EllipsisHorizontalIcon,
+  FolderIcon,
+  ShareIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline"
 
 import {
   DropdownMenu,
@@ -31,7 +31,7 @@ export function NavDocuments({
   items: {
     name: string
     url: string
-    icon: Icon
+    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
   }[]
 }) {
   const { isMobile } = useSidebar()
@@ -44,7 +44,7 @@ export function NavDocuments({
           <SidebarMenuItem key={item.name}>
             <SidebarMenuButton asChild>
               <a href={item.url}>
-                <item.icon />
+                <item.icon className="size-4" />
                 <span>{item.name}</span>
               </a>
             </SidebarMenuButton>
@@ -54,26 +54,26 @@ export function NavDocuments({
                   showOnHover
                   className="data-[state=open]:bg-accent rounded-sm"
                 >
-                  <IconDots />
+                  <EllipsisHorizontalIcon className="size-4" />
                   <span className="sr-only">More</span>
                 </SidebarMenuAction>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-24 rounded-lg"
+                className="w-40 rounded-lg text-foreground"
                 side={isMobile ? "bottom" : "right"}
                 align={isMobile ? "end" : "start"}
               >
                 <DropdownMenuItem>
-                  <IconFolder />
+                  <FolderIcon className="size-4 mr-2" />
                   <span>Open</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <IconShare3 />
+                  <ShareIcon className="size-4 mr-2" />
                   <span>Share</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem variant="destructive">
-                  <IconTrash />
+                  <TrashIcon className="size-4 mr-2" />
                   <span>Delete</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -82,7 +82,7 @@ export function NavDocuments({
         ))}
         <SidebarMenuItem>
           <SidebarMenuButton className="text-sidebar-foreground/70">
-            <IconDots className="text-sidebar-foreground/70" />
+            <EllipsisHorizontalIcon className="size-4 text-sidebar-foreground/70" />
             <span>More</span>
           </SidebarMenuButton>
         </SidebarMenuItem>

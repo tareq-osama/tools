@@ -5,50 +5,44 @@ import {
   SidebarProvider,
 } from '@/components/ui/sidebar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { IconCalculator, IconChartBar, IconCoin, IconTrendingUp, IconClock, IconReceipt } from '@tabler/icons-react'
+import { 
+  BanknotesIcon, 
+  CursorArrowRaysIcon,
+  BeakerIcon,
+  CurrencyDollarIcon,
+  SparklesIcon,
+  PuzzlePieceIcon
+} from '@heroicons/react/24/solid'
 import Link from 'next/link'
+import { cn } from '@/lib/utils'
 
 const tools = [
   {
-    title: 'Revenue Calculator',
-    description: 'Calculate revenue goals and track sales targets for products and services',
-    icon: IconCalculator,
+    title: 'Revenue Strategist',
+    description: 'Calculate revenue goals and track sales targets for products and services.',
+    icon: BanknotesIcon,
     href: '/revenue-calculator',
     available: true,
   },
   {
-    title: 'Profit Margin Calculator',
-    description: 'Calculate profit margins, markup, and break-even points',
-    icon: IconCoin,
-    href: '/profit-margin-calculator',
+    title: 'Conversion Engine',
+    description: 'Predict growth, simulate scenarios, and visualize acquisition funnels.',
+    icon: CursorArrowRaysIcon,
+    href: '/conversion-calculator',
     available: true,
   },
   {
-    title: 'ROI Calculator',
-    description: 'Calculate return on investment and track campaign performance',
-    icon: IconTrendingUp,
-    href: '#',
-    available: false,
+    title: 'Marketing KPIs',
+    description: 'Analyze ROAS, CAC, and retention benchmarks for your campaigns.',
+    icon: BeakerIcon,
+    href: '/marketing-kpis',
+    available: true,
   },
   {
-    title: 'Time Tracking',
-    description: 'Track billable hours and calculate client billing',
-    icon: IconClock,
-    href: '#',
-    available: false,
-  },
-  {
-    title: 'Expense Tracker',
-    description: 'Monitor business expenses and categorize spending',
-    icon: IconReceipt,
-    href: '#',
-    available: false,
-  },
-  {
-    title: 'Analytics Dashboard',
-    description: 'View comprehensive business metrics and insights',
-    icon: IconChartBar,
-    href: '/dashboard',
+    title: 'Profit Margin Suite',
+    description: 'Instantly calculate net margins, expenses, and break-even points.',
+    icon: CurrencyDollarIcon,
+    href: '/profit-margin-calculator',
     available: true,
   },
 ]
@@ -67,68 +61,52 @@ export default function HomePage() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <div className="px-4 lg:px-6">
-                <div className="mb-8">
-                  <h1 className="text-3xl font-bold tracking-tight">Business Tools</h1>
-                  <p className="text-muted-foreground mt-2">
-                    A collection of essential tools to help you manage and grow your business
-                  </p>
-                </div>
+          <div className="flex flex-1 flex-col gap-2 p-4 md:p-8 max-w-6xl mx-auto w-full">
+            <div className="flex flex-col gap-4 py-8 md:py-12 border-b mb-12">
+               <h1 className="text-3xl font-bold tracking-tight">Multiplay</h1>
+               <p className="text-sm text-muted-foreground max-w-xl">
+                 A simple and powerful suite of tools to help you manage and grow your business metrics with precision.
+               </p>
+            </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                  {tools.map((tool) => {
-                    const Icon = tool.icon
-                    const CardWrapper = tool.available ? Link : 'div'
-
-                    return (
-                      <CardWrapper
-                        key={tool.title}
-                        href={tool.available ? tool.href : '#'}
-                        className={tool.available ? 'block' : 'block'}
-                      >
-                        <Card className={`h-full transition-all ${
-                          tool.available
-                            ? 'hover:shadow-lg hover:border-primary/50 cursor-pointer'
-                            : 'opacity-60 cursor-not-allowed'
-                        }`}>
-                          <CardHeader>
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-lg ${
-                                  tool.available
-                                    ? 'bg-primary/10 text-primary'
-                                    : 'bg-muted text-muted-foreground'
-                                }`}>
-                                  <Icon className="h-6 w-6" />
-                                </div>
-                                <div>
-                                  <CardTitle className="text-lg">{tool.title}</CardTitle>
-                                  {!tool.available && (
-                                    <span className="text-xs text-muted-foreground">Coming Soon</span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            <CardDescription className="mt-2">
-                              {tool.description}
-                            </CardDescription>
-                          </CardHeader>
-                        </Card>
-                      </CardWrapper>
-                    )
-                  })}
-                </div>
-
-                <div className="mt-12 p-6 rounded-lg border bg-muted/50">
-                  <h2 className="text-lg font-semibold mb-2">More Tools Coming Soon</h2>
-                  <p className="text-sm text-muted-foreground">
-                    We're continuously adding new tools to help you manage your business more effectively.
-                    Check back regularly for updates!
-                  </p>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {tools.map((tool) => {
+                const Icon = tool.icon
+                return (
+                  <Link
+                    key={tool.title}
+                    href={tool.href}
+                    className="group"
+                  >
+                    <Card className="h-full transition-colors hover:bg-muted/50 border-border/50 shadow-none rounded-xl">
+                       <CardHeader className="p-6">
+                         <div className="p-2 w-fit bg-primary/5 text-primary rounded-lg mb-4">
+                           <Icon className="h-5 w-5" />
+                         </div>
+                         <CardTitle className="text-lg font-semibold mb-2">{tool.title}</CardTitle>
+                         <CardDescription className="text-xs leading-relaxed">
+                           {tool.description}
+                         </CardDescription>
+                       </CardHeader>
+                    </Card>
+                  </Link>
+                )
+              })}
+            </div>
+            
+            <div className="mt-20 pt-12 border-t grid grid-cols-1 md:grid-cols-3 gap-12 text-center md:text-left">
+               <div className="space-y-2">
+                  <h3 className="text-sm font-bold">Accuracy</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed italic">Precise mathematical models for business growth.</p>
+               </div>
+               <div className="space-y-2">
+                  <h3 className="text-sm font-bold">Flexibility</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed italic">Easily simulate different scenarios and strategies.</p>
+               </div>
+               <div className="space-y-2">
+                  <h3 className="text-sm font-bold">Simplicity</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed italic">Clean, focused interface for rapid calculations.</p>
+               </div>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { type Icon } from "@tabler/icons-react"
+import * as React from "react"
 import Link from 'next/link'
 
 import {
@@ -17,7 +17,7 @@ export function NavMain({
   items: {
     title: string
     url: string
-    icon?: Icon
+    icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>
   }[]
 }) {
   return (
@@ -29,14 +29,14 @@ export function NavMain({
               {item.url === '#' ? (
                 <SidebarMenuButton tooltip={item.title} asChild>
                   <a href={item.url}>
-                    {item.icon && <item.icon />}
+                    {item.icon && <item.icon className="size-4" />}
                     <span>{item.title}</span>
                   </a>
                 </SidebarMenuButton>
               ) : (
                 <SidebarMenuButton tooltip={item.title} asChild>
                   <Link href={item.url}>
-                    {item.icon && <item.icon />}
+                    {item.icon && <item.icon className="size-4" />}
                     <span>{item.title}</span>
                   </Link>
                 </SidebarMenuButton>

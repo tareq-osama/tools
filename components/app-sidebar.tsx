@@ -1,16 +1,17 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
-  IconCalculator,
-  IconCoin,
-  IconDashboard,
-  IconHome,
-  IconInnerShadowTop,
-} from "@tabler/icons-react"
+  HomeIcon,
+  CalculatorIcon,
+  CurrencyDollarIcon,
+  CursorArrowRaysIcon,
+  PuzzlePieceIcon,
+  ChartBarIcon,
+} from "@heroicons/react/24/solid";
 
-import { NavMain } from '@/components/nav-main'
-import { NavUser } from '@/components/nav-user'
+import { NavMain } from "@/components/nav-main";
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -19,37 +20,42 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from '@/components/ui/sidebar'
+} from "@/components/ui/sidebar";
 
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
+    name: "User",
+    email: "user@multiplay.com",
     avatar: "/avatars/image.png",
   },
   navMain: [
     {
       title: "Home",
       url: "/",
-      icon: IconHome,
-    },
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: IconDashboard,
+      icon: HomeIcon,
     },
     {
       title: "Revenue Calculator",
       url: "/revenue-calculator",
-      icon: IconCalculator,
+      icon: CalculatorIcon,
     },
     {
       title: "Profit Margin Calculator",
       url: "/profit-margin-calculator",
-      icon: IconCoin,
+      icon: CurrencyDollarIcon,
+    },
+    {
+      title: "Conversion Engine",
+      url: "/conversion-calculator",
+      icon: CursorArrowRaysIcon,
+    },
+    {
+      title: "Marketing KPIs",
+      url: "/marketing-kpis",
+      icon: ChartBarIcon,
     },
   ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -62,8 +68,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="/">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Business Tools</span>
+                <PuzzlePieceIcon className="!size-5 text-primary" />
+                <span className="text-base font-bold tracking-tight">
+                  Multiplay
+                </span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -76,5 +84,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

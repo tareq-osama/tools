@@ -1,4 +1,4 @@
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react"
+import { ArrowTrendingDownIcon, ArrowTrendingUpIcon } from "@heroicons/react/24/outline"
 
 import { Badge } from '@/components/ui/badge'
 import {
@@ -16,19 +16,19 @@ export function SectionCards() {
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Total Revenue</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+          <CardTitle className="text-2xl font-bold tabular-nums @[250px]/card:text-3xl text-foreground">
             $1,250.00
           </CardTitle>
           <CardAction>
-            <Badge variant="outline">
-              <IconTrendingUp />
+            <Badge variant="outline" className="text-green-600 bg-green-500/5 border-green-500/20">
+              <ArrowTrendingUpIcon className="size-3.5 mr-1" />
               +12.5%
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Trending up this month <IconTrendingUp className="size-4" />
+          <div className="line-clamp-1 flex gap-2 font-medium text-foreground">
+            Trending up this month <ArrowTrendingUpIcon className="size-4 text-green-500" />
           </div>
           <div className="text-muted-foreground">
             Visitors for the last 6 months
@@ -38,19 +38,19 @@ export function SectionCards() {
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>New Customers</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+          <CardTitle className="text-2xl font-bold tabular-nums @[250px]/card:text-3xl text-foreground">
             1,234
           </CardTitle>
           <CardAction>
-            <Badge variant="outline">
-              <IconTrendingDown />
+            <Badge variant="outline" className="text-red-600 bg-red-500/5 border-red-500/20">
+              <ArrowTrendingDownIcon className="size-3.5 mr-1" />
               -20%
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Down 20% this period <IconTrendingDown className="size-4" />
+          <div className="line-clamp-1 flex gap-2 font-medium text-foreground">
+            Down 20% this period <ArrowTrendingDownIcon className="size-4 text-red-500" />
           </div>
           <div className="text-muted-foreground">
             Acquisition needs attention
@@ -60,19 +60,19 @@ export function SectionCards() {
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Active Accounts</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+          <CardTitle className="text-2xl font-bold tabular-nums @[250px]/card:text-3xl text-foreground">
             45,678
           </CardTitle>
           <CardAction>
-            <Badge variant="outline">
-              <IconTrendingUp />
+            <Badge variant="outline" className="text-green-600 bg-green-500/5 border-green-500/20">
+              <ArrowTrendingUpIcon className="size-3.5 mr-1" />
               +12.5%
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Strong user retention <IconTrendingUp className="size-4" />
+          <div className="line-clamp-1 flex gap-2 font-medium text-foreground">
+            Strong user retention <ArrowTrendingUpIcon className="size-4 text-green-500" />
           </div>
           <div className="text-muted-foreground">Engagement exceed targets</div>
         </CardFooter>
@@ -80,19 +80,19 @@ export function SectionCards() {
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Growth Rate</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+          <CardTitle className="text-2xl font-bold tabular-nums @[250px]/card:text-3xl text-foreground">
             4.5%
           </CardTitle>
           <CardAction>
-            <Badge variant="outline">
-              <IconTrendingUp />
+            <Badge variant="outline" className="text-green-600 bg-green-500/5 border-green-500/20">
+              <ArrowTrendingUpIcon className="size-3.5 mr-1" />
               +4.5%
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Steady performance increase <IconTrendingUp className="size-4" />
+          <div className="line-clamp-1 flex gap-2 font-medium text-foreground">
+            Steady performance increase <ArrowTrendingUpIcon className="size-4 text-green-500" />
           </div>
           <div className="text-muted-foreground">Meets growth projections</div>
         </CardFooter>
