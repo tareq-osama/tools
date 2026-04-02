@@ -25,7 +25,9 @@ import {
   ArrowPathIcon,
   ShoppingBagIcon,
   ChartPieIcon,
-  CircleStackIcon
+  CircleStackIcon,
+  EnvelopeIcon,
+  CloudArrowUpIcon
 } from '@heroicons/react/24/solid'
 import { 
   PieChart, 
@@ -37,6 +39,25 @@ import {
 import NumberFlow from '@number-flow/react'
 import { Slider } from '@/components/ui/slider'
 import { cn } from '@/lib/utils'
+import { saveRevenueSimulation, submitInquiry } from '@/lib/corvex'
+import { toast } from 'sonner'
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogFooter
+} from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select'
 
 interface Offering {
   id: string
@@ -49,6 +70,17 @@ interface Offering {
 export default function RevenueCalculator() {
   const [annualGoal, setAnnualGoal] = React.useState<number>(500000)
   const [churnRate, setChurnRate] = React.useState<number>(5)
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [showInquiry, setShowInquiry] = React.useState(false)
+
+  // Form State
+  const [formData, setFormData] = React.useState({
+    fullName: '',
+    email: '',
+    interestPlan: '',
+    notes: ''
+  })
 
   // Entrance Animation
   const [isMounted, setIsMounted] = React.useState(false)
@@ -56,7 +88,6 @@ export default function RevenueCalculator() {
     setIsMounted(true)
   }, [])
 
-  
   const [offerings, setOfferings] = React.useState<Offering[]>([
     { id: '1', name: 'Starter Plan', price: 49, quantity: 200, type: 'recurring' },
     { id: '2', name: 'Pro Plan', price: 149, quantity: 100, type: 'recurring' },
@@ -85,9 +116,6 @@ export default function RevenueCalculator() {
 
   const COLORS = ['#64748b', '#94a3b8', '#cbd5e1', '#e2e8f0', '#f1f5f9']
 
-  const formatCurrency = (val: number) => 
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val)
-
   const addOffering = (type: 'one-time' | 'recurring') => {
     const newId = Math.random().toString(36).substr(2, 9)
     setOfferings([...offerings, { 
@@ -107,6 +135,45 @@ export default function RevenueCalculator() {
     setOfferings(offerings.map(o => o.id === id ? { ...o, ...updates } : o))
   }
 
+  const handleSaveSimulation = async () => {
+    setIsSaving(true)
+    try {
+      // Map local offerings to CMS format (title + ID if they exist, but for new ones we use names)
+      // Since these are local, we just pass names/prices. 
+      // Multi-reference in Corvex usually expects objects or IDs.
+      // For this demo, we'll just save the goals.
+      await saveRevenueSimulation({
+        annualGoal,
+        churnRate,
+        offerings: offerings.map(o => ({ id: 0, title: `${o.name} ($${o.price})` })) // Simplified for reference
+      })
+      toast.success("Simulation persistent in Corvex CMS.")
+    } catch (err) {
+      toast.error("Cloud persistence failed.")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleInquirySubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    try {
+      await submitInquiry({
+        fullName: formData.fullName,
+        email: formData.email,
+        interestPlan: formData.interestPlan,
+        simulationNotes: formData.notes + `\n\nSimulation Data: ARR ${totalProjectedRevenue}, Goal ${annualGoal}`
+      })
+      toast.success("Inquiry sent to CRM.")
+      setShowInquiry(false)
+    } catch (err) {
+      toast.error("Submission failed.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <SidebarProvider
       style={{
@@ -118,9 +185,90 @@ export default function RevenueCalculator() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col p-4 md:p-8 space-y-8 max-w-6xl mx-auto w-full pb-20">
-          <div className="flex flex-col gap-2 pb-6 border-b">
-            <h1 className="text-2xl font-bold tracking-tight">Revenue Strategist</h1>
-            <p className="text-xs text-muted-foreground">Engineer your fiscal goals with simple revenue modeling.</p>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-bold tracking-tight">Revenue Strategist</h1>
+              <p className="text-xs text-muted-foreground">Engineer your fiscal goals with simple revenue modeling.</p>
+            </div>
+            <div className="flex gap-2">
+              <Dialog open={showInquiry} onOpenChange={setShowInquiry}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9 gap-2 text-xs font-bold uppercase tracking-wider border-primary/20 hover:bg-primary/5">
+                    <EnvelopeIcon className="h-3.5 w-3.5" />
+                    Connect Expert
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle className="italic font-bold text-xl uppercase tracking-tighter">Strategic Review</DialogTitle>
+                    <DialogDescription className="text-xs">
+                      Send your revenue model to our team for a custom scaling roadmap.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleInquirySubmit} className="space-y-4 pt-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="name" className="text-[10px] font-bold uppercase text-muted-foreground">Full Name</Label>
+                      <Input 
+                        id="name" 
+                        placeholder="John Doe" 
+                        required 
+                        value={formData.fullName}
+                        onChange={e => setFormData({ ...formData, fullName: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="email" className="text-[10px] font-bold uppercase text-muted-foreground">Work Email</Label>
+                      <Input 
+                        id="email" 
+                        type="email" 
+                        placeholder="john@company.com" 
+                        required 
+                        value={formData.email}
+                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">Primary Interest</Label>
+                      <Select value={formData.interestPlan} onValueChange={val => setFormData({ ...formData, interestPlan: val })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a plan" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {offerings.map(o => (
+                            <SelectItem key={o.id} value={o.name}>{o.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="notes" className="text-[10px] font-bold uppercase text-muted-foreground">Strategic Notes</Label>
+                      <Textarea 
+                        id="notes" 
+                        placeholder="Any specific challenges or goals?" 
+                        value={formData.notes}
+                        onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                      />
+                    </div>
+                    <DialogFooter className="pt-4">
+                      <Button type="submit" className="w-full font-bold uppercase tracking-widest text-xs h-11" disabled={isSubmitting}>
+                        {isSubmitting ? "Routing to CRM..." : "Push to Workspace"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-9 gap-2 text-xs font-bold uppercase tracking-wider border-foreground/10"
+                onClick={handleSaveSimulation}
+                disabled={isSaving}
+              >
+                <CloudArrowUpIcon className={cn("h-3.5 w-3.5 text-muted-foreground", isSaving && "animate-pulse")} />
+                {isSaving ? "Saving..." : "Save Simulation"}
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -327,7 +475,7 @@ export default function RevenueCalculator() {
                           <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
                           <span className="text-muted-foreground truncate max-w-[100px] uppercase font-bold">{entry.name}</span>
                         </div>
-                        <span className="text-muted-foreground"><NumberFlow value={Number(((entry.value / totalProjectedRevenue) * 100).toFixed(1))} />%</span>
+                        <span className="text-muted-foreground"><NumberFlow value={totalProjectedRevenue > 0 ? Number(((entry.value / totalProjectedRevenue) * 100).toFixed(1)) : 0} />%</span>
                       </div>
                     ))}
                   </div>

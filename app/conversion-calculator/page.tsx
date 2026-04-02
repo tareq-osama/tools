@@ -15,12 +15,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
 import { KpiInfo } from "@/components/kpi-info"
 import { 
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-  InputGroupText,
-} from "@/components/ui/input-group"
+  ChartConfig, 
+  ChartContainer, 
+  ChartTooltip, 
+  ChartTooltipContent 
+} from "@/components/ui/chart"
 import { 
   PlusIcon,
   MinusIcon,
@@ -32,7 +31,17 @@ import {
   AcademicCapIcon,
   BanknotesIcon,
   PresentationChartLineIcon
-} from "@heroicons/react/24/solid"
+} from "@heroicons/react/24/outline"
+import { saveConversionEngineSimulation } from "@/lib/corvex"
+import { toast } from "sonner"
+import { 
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { 
   XAxis, 
   YAxis, 
@@ -48,6 +57,72 @@ import {
 import NumberFlow from "@number-flow/react"
 import { cn } from "@/lib/utils"
 
+// Reusable numeric input pattern for premium standardization.
+function NumericField({
+  label,
+  id,
+  value,
+  onChange,
+  prefix,
+  suffix,
+  step = 1,
+  min = 0,
+  className,
+  inline = false
+}: {
+  label: string
+  id?: string
+  value: number
+  onChange: (val: number) => void
+  prefix?: string
+  suffix?: string
+  step?: number
+  min?: number
+  className?: string
+  inline?: boolean
+}) {
+  return (
+    <Field className={cn(className, inline && "flex-row items-center justify-between gap-4")}>
+      <FieldLabel htmlFor={id} className={cn("text-[10px] font-black uppercase tracking-widest text-muted-foreground/80", inline && "mb-0")}>{label}</FieldLabel>
+      <InputGroup className={cn("hover:border-primary/40 transition-colors", inline ? "w-44" : "w-full")}>
+        {prefix && (
+          <InputGroupAddon align="inline-start" className="bg-muted/30 border-r px-2.5">
+            <InputGroupText className="font-bold text-[10px]">{prefix}</InputGroupText>
+          </InputGroupAddon>
+        )}
+        <InputGroupInput
+          id={id}
+          type="number"
+          className="text-center font-bold text-xs"
+          value={value}
+          onChange={e => onChange(Number(e.target.value))}
+          step={step}
+          min={min}
+        />
+        {suffix && (
+          <InputGroupAddon align="inline-end" className="bg-muted/30 border-l px-2.5">
+            <InputGroupText className="font-bold text-[10px]">{suffix}</InputGroupText>
+          </InputGroupAddon>
+        )}
+        <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden bg-muted/10 h-full">
+          <InputGroupButton
+            onClick={() => onChange(Math.max(min, value - step))}
+            className="h-full rounded-none border-r w-8 hover:bg-muted/50 active:bg-muted/80 transition-colors"
+          >
+            <MinusIcon className="h-3.5 w-3.5 stroke-[3]" />
+          </InputGroupButton>
+          <InputGroupButton
+            onClick={() => onChange(value + step)}
+            className="h-full rounded-none w-8 hover:bg-muted/50 active:bg-muted/80 transition-colors"
+          >
+            <PlusIcon className="h-3.5 w-3.5 stroke-[3]" />
+          </InputGroupButton>
+        </InputGroupAddon>
+      </InputGroup>
+    </Field>
+  )
+}
+
 export default function ConversionCalculator() {
   // Baseline Configuration
   const [visitors, setVisitors] = React.useState<number>(10000)
@@ -62,6 +137,30 @@ export default function ConversionCalculator() {
     setIsMounted(true)
   }, [])
 
+  const [isSaving, setIsSaving] = React.useState(false)
+
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      await saveConversionEngineSimulation({
+        visitors: visitors,
+        convRate: convRate,
+        aov: aov,
+        ltv: ltv,
+        adSpend: adSpend,
+        conversions: Math.round(calculatedConversions),
+        expectedRevenue: Math.round(immediateRevenue),
+        cac: cac,
+        ltvCacRatio: ltvCacRatio
+      })
+      toast.success("Conversion simulation saved successfully.")
+    } catch (err) {
+      toast.error("Failed to save simulation.")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   
   // Scenario Planning
   const [trafficIncrease, setTrafficIncrease] = React.useState<number>(10)
@@ -75,6 +174,17 @@ export default function ConversionCalculator() {
     { name: "Checkout Start", value: 800 },
     { name: "Purchased", value: 300 },
   ])
+
+  const chartConfig = {
+    base: {
+      label: "Baseline",
+      color: "hsl(var(--muted-foreground))",
+    },
+    projected: {
+      label: "Growth",
+      color: "hsl(var(--primary))",
+    },
+  } satisfies ChartConfig
 
   // Calculations
   const calculatedConversions = (visitors * convRate) / 100
@@ -201,88 +311,74 @@ export default function ConversionCalculator() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center px-1">
-                        <Label className="text-[10px] font-bold uppercase text-muted-foreground pr-2">Visitors</Label>
-                        <InputGroup className="w-40 h-7 pr-0 overflow-hidden">
-                           <InputGroupInput 
-                             type="number" 
-                             className="w-full h-7 text-center text-xs font-mono px-2" 
-                             value={visitors} 
-                             onChange={(e) => setVisitors(Number(e.target.value))} 
-                           />
-                           <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden">
-                             <InputGroupButton onClick={() => setVisitors(Math.max(0, visitors - 1000))} className="h-full rounded-none border-r w-8 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                             <InputGroupButton onClick={() => setVisitors(visitors + 1000)} className="h-full rounded-none w-8 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                           </InputGroupAddon>
-                        </InputGroup>
-                      </div>
-                      <Slider min={100} max={100000} step={100} value={[visitors]} onValueChange={([val]) => setVisitors(val)} />
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center px-1">
-                        <Label className="text-[10px] font-bold uppercase text-muted-foreground pr-2">Conv. Rate</Label>
-                        <InputGroup className="w-32 h-7 pr-0">
-                           <InputGroupAddon className="p-0 border-r">
-                             <InputGroupButton onClick={() => setConvRate(Math.max(0, convRate - 0.1))} className="h-full rounded-none w-8 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                           </InputGroupAddon>
-                           <InputGroupInput 
-                             type="number" 
-                             className="w-full h-7 text-center text-xs font-mono px-1" 
-                             value={convRate} 
-                             step={0.1}
-                             onChange={(e) => setConvRate(Number(e.target.value))} 
-                           />
-                           <InputGroupAddon align="inline-end" className="bg-muted/50 border-l px-0 flex">
-                             <InputGroupText className="text-[10px] font-bold px-1.5">%</InputGroupText>
-                             <InputGroupButton onClick={() => setConvRate(Math.min(100, convRate + 0.1))} className="h-full rounded-none border-l w-8 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                           </InputGroupAddon>
-                        </InputGroup>
-                      </div>
-                      <Slider min={0.1} max={20} step={0.1} value={[convRate]} onValueChange={([val]) => setConvRate(val)} />
-                    </div>
-                    <div className="pt-6 border-t border-dashed space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-bold uppercase text-muted-foreground">Ad Budget</Label>
-                          <InputGroup className="h-8 pr-1">
-                            <InputGroupAddon className="bg-muted/50 border-r px-2">
-                              <InputGroupText className="text-xs">$</InputGroupText>
-                            </InputGroupAddon>
-                            <InputGroupInput type="number" className="h-8 text-sm text-center" value={adSpend} onChange={(e) => setAdSpend(Number(e.target.value))} />
-                            <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden">
-                              <InputGroupButton onClick={() => setAdSpend(Math.max(0, adSpend - 100))} className="h-full rounded-none border-r w-8 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                              <InputGroupButton onClick={() => setAdSpend(adSpend + 100)} className="h-full rounded-none w-8 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                            </InputGroupAddon>
-                          </InputGroup>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] font-bold uppercase text-muted-foreground">AOV</Label>
-                          <InputGroup className="h-8 pr-1">
-                            <InputGroupAddon className="bg-muted/50 border-r px-2">
-                              <InputGroupText className="text-xs">$</InputGroupText>
-                            </InputGroupAddon>
-                            <InputGroupInput type="number" className="h-8 text-sm text-center" value={aov} onChange={(e) => setAov(Number(e.target.value))} />
-                            <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden">
-                              <InputGroupButton onClick={() => setAov(Math.max(0, aov - 10))} className="h-full rounded-none border-r w-8 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                              <InputGroupButton onClick={() => setAov(aov + 10)} className="h-full rounded-none w-8 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                            </InputGroupAddon>
-                          </InputGroup>
+                    <FieldGroup className="gap-6">
+                      <div>
+                        <NumericField
+                          label="Monthly Visitors"
+                          id="visitors"
+                          value={visitors}
+                          onChange={setVisitors}
+                          step={1000}
+                          inline
+                        />
+                        <div className="pt-3 px-1">
+                          <Slider min={100} max={100000} step={100} value={[visitors]} onValueChange={([val]) => setVisitors(val)} />
                         </div>
                       </div>
-                      <div className="space-y-2">
-                         <Label className="text-[10px] font-bold uppercase text-muted-foreground">Current LTV</Label>
-                         <InputGroup className="h-8 pr-0 overflow-hidden">
-                            <InputGroupAddon className="bg-muted/50 border-r px-2">
-                              <InputGroupText className="text-xs">$</InputGroupText>
-                            </InputGroupAddon>
-                            <InputGroupInput type="number" className="h-8 text-sm text-center px-1" value={ltv} onChange={(e) => setLtv(Number(e.target.value))} />
-                            <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden">
-                              <InputGroupButton onClick={() => setLtv(Math.max(0, ltv - 50))} className="h-full rounded-none border-r w-8 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                              <InputGroupButton onClick={() => setLtv(ltv + 50)} className="h-full rounded-none w-8 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                            </InputGroupAddon>
-                         </InputGroup>
+
+                      <div>
+                        <NumericField
+                          label="Conv. Rate"
+                          id="convRate"
+                          value={convRate}
+                          onChange={setConvRate}
+                          suffix="%"
+                          step={0.1}
+                          inline
+                        />
+                        <div className="pt-3 px-1">
+                          <Slider min={0.1} max={20} step={0.1} value={[convRate]} onValueChange={([val]) => setConvRate(val)} />
+                        </div>
                       </div>
+
+                      <div className="pt-4 border-t border-dashed grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <NumericField
+                          label="Ad Budget"
+                          id="adSpend"
+                          value={adSpend}
+                          onChange={setAdSpend}
+                          prefix="$"
+                          step={100}
+                        />
+                        <NumericField
+                          label="AOV"
+                          id="aov"
+                          value={aov}
+                          onChange={setAov}
+                          prefix="$"
+                          step={10}
+                        />
+                      </div>
+
+                      <NumericField
+                        label="Projected LTV"
+                        id="ltv"
+                        value={ltv}
+                        onChange={setLtv}
+                        prefix="$"
+                        step={50}
+                      />
+                    </FieldGroup>
+
+                    <div className="pt-6">
+                      <Button 
+                        className="w-full text-xs font-bold uppercase tracking-[0.15em] h-10 border-foreground/20 hover:bg-foreground hover:text-background transition-all" 
+                        variant="outline"
+                        onClick={handleSave}
+                        disabled={isSaving}
+                      >
+                        {isSaving ? "Saving..." : "Secure Workspace Persistence"}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -350,16 +446,16 @@ export default function ConversionCalculator() {
                         </div>
                     </CardHeader>
                     <CardContent className="h-[340px] pt-8">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ChartContainer config={chartConfig} className="h-full w-full">
                             <AreaChart data={growthProjectionData} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                                 <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} dy={10} />
                                 <YAxis fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val/1000}k`} />
-                                <Tooltip />
-                                <Area type="monotone" dataKey="base" stroke="#cbd5e1" fillOpacity={0} />
+                                <ChartTooltip content={<ChartTooltipContent />} />
+                                <Area type="monotone" dataKey="base" stroke="hsl(var(--muted-foreground)/0.4)" fillOpacity={0} />
                                 <Area type="monotone" dataKey="projected" stroke="hsl(var(--primary))" fillOpacity={0.1} fill="hsl(var(--primary))" strokeWidth={2} />
                             </AreaChart>
-                        </ResponsiveContainer>
+                        </ChartContainer>
                     </CardContent>
                   </Card>
                </div>
@@ -371,22 +467,22 @@ export default function ConversionCalculator() {
                     <CardHeader>
                         <CardTitle className="text-base font-bold italic">Acquisition Mapper</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        {funnelSteps.map((step, index) => (
-                        <div key={index} className="space-y-1">
-                            <Label className="text-[10px] font-bold uppercase text-muted-foreground">{step.name}</Label>
-                            <Input 
-                                type="number" 
-                                className="h-8 text-sm"
-                                value={step.value}
-                                onChange={(e) => {
-                                    const newFunnel = [...funnelSteps]
-                                    newFunnel[index].value = Number(e.target.value)
-                                    setFunnelSteps(newFunnel)
-                                }}
+                    <CardContent className="space-y-6">
+                      <FieldGroup className="gap-5">
+                          {funnelSteps.map((step, index) => (
+                            <NumericField
+                              key={step.name}
+                              label={step.name}
+                              value={step.value}
+                              onChange={(val) => {
+                                  const newFunnel = [...funnelSteps]
+                                  newFunnel[index].value = val
+                                  setFunnelSteps(newFunnel)
+                              }}
+                              step={100}
                             />
-                        </div>
-                        ))}
+                          ))}
+                      </FieldGroup>
                     </CardContent>
                     </Card>
 
@@ -395,20 +491,20 @@ export default function ConversionCalculator() {
                             <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Visual Acquisition Flow</CardTitle>
                         </CardHeader>
                         <CardContent className="h-[400px] pt-8">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ChartContainer config={chartConfig} className="h-full w-full">
                                 <FunnelChart>
-                                <Tooltip />
+                                <ChartTooltip content={<ChartTooltipContent />} />
                                 <Funnel data={funnelSteps.map((step, index) => {
                                   return {
                                     ...step,
-                                    fill: `#94a3b8`,
+                                    fill: `hsl(var(--muted-foreground))`,
                                     fillOpacity: 1 - index * 0.15
                                   }
                                 })} dataKey="value" nameKey="name">
-                                    <LabelList position="right" fill="#64748b" stroke="none" dataKey="name" fontSize={10} fontWeight="600" />
+                                    <LabelList position="right" fill="hsl(var(--muted-foreground))" stroke="none" dataKey="name" fontSize={10} fontWeight="600" />
                                 </Funnel>
                                 </FunnelChart>
-                            </ResponsiveContainer>
+                            </ChartContainer>
                         </CardContent>
                     </Card>
                 </div>

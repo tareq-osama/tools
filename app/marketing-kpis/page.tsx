@@ -13,6 +13,14 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { KpiInfo } from "@/components/kpi-info"
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart"
+import { saveMarketingSimulation } from "@/lib/corvex"
+import { toast } from "sonner"
 import { 
   InputGroup,
   InputGroupAddon,
@@ -20,6 +28,7 @@ import {
   InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { 
   ChartBarIcon, 
   ArrowTrendingUpIcon,
@@ -38,7 +47,7 @@ import {
   FingerPrintIcon,
   PlusIcon,
   MinusIcon
-} from "@heroicons/react/24/solid"
+} from "@heroicons/react/24/outline"
 import { 
   BarChart, 
   Bar, 
@@ -55,6 +64,78 @@ import {
   Radar
 } from "recharts"
 import NumberFlow from "@number-flow/react"
+import { cn } from "@/lib/utils"
+
+// Reusable numeric input pattern for premium standardization.
+function NumericField({
+  label,
+  id,
+  value,
+  onChange,
+  prefix,
+  suffix,
+  step = 1,
+  min = 0,
+  className,
+  inline = false,
+  description
+}: {
+  label: string
+  id?: string
+  value: number
+  onChange: (val: number) => void
+  prefix?: string
+  suffix?: string
+  step?: number
+  min?: number
+  className?: string
+  inline?: boolean
+  description?: string
+}) {
+  return (
+    <Field className={cn(className, inline && "flex-row items-center justify-between gap-4")}>
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <FieldLabel htmlFor={id} className={cn("text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 mb-0")}>{label}</FieldLabel>
+        {description && <KpiInfo description={description} />}
+      </div>
+      <InputGroup className={cn("hover:border-primary/40 transition-colors", inline ? "w-44" : "w-full")}>
+        {prefix && (
+          <InputGroupAddon align="inline-start" className="bg-muted/30 border-r px-2.5">
+            <InputGroupText className="font-bold text-[10px]">{prefix}</InputGroupText>
+          </InputGroupAddon>
+        )}
+        <InputGroupInput
+          id={id}
+          type="number"
+          className="text-center font-bold text-xs"
+          value={value}
+          onChange={e => onChange(Number(e.target.value))}
+          step={step}
+          min={min}
+        />
+        {suffix && (
+          <InputGroupAddon align="inline-end" className="bg-muted/30 border-l px-2.5">
+            <InputGroupText className="font-bold text-[10px]">{suffix}</InputGroupText>
+          </InputGroupAddon>
+        )}
+        <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden bg-muted/10 h-full">
+          <InputGroupButton
+            onClick={() => onChange(Math.max(min, value - step))}
+            className="h-full rounded-none border-r w-8 hover:bg-muted/50 active:bg-muted/80 transition-colors"
+          >
+            <MinusIcon className="h-3.5 w-3.5 stroke-[3]" />
+          </InputGroupButton>
+          <InputGroupButton
+            onClick={() => onChange(value + step)}
+            className="h-full rounded-none w-8 hover:bg-muted/50 active:bg-muted/80 transition-colors"
+          >
+            <PlusIcon className="h-3.5 w-3.5 stroke-[3]" />
+          </InputGroupButton>
+        </InputGroupAddon>
+      </InputGroup>
+    </Field>
+  )
+}
 
 export default function MarketingKPIs() {
    // Core Metrics
@@ -116,6 +197,45 @@ export default function MarketingKPIs() {
       { subject: 'Persistence', A: (avgLifeInMonths / 24) * 100, fullMark: 150 },
    ]
 
+   const chartConfig = {
+    value: {
+      label: "Actual",
+      color: "hsl(var(--primary))",
+    },
+    target: {
+      label: "Benchmark",
+      color: "hsl(var(--muted))",
+    },
+    A: {
+      label: "Performance",
+      color: "hsl(var(--primary))",
+    }
+   } satisfies ChartConfig
+
+   const [isSaving, setIsSaving] = React.useState(false)
+
+   const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      await saveMarketingSimulation({
+        adSpend,
+        revenue,
+        grossMargin,
+        newCustomers,
+        avgLtv,
+        impressions,
+        clicks,
+        retentionBase,
+        lostCustomers
+      })
+      toast.success("Marketing simulation saved successfully.")
+    } catch (err) {
+      toast.error("Failed to save simulation. Please try again.")
+    } finally {
+      setIsSaving(false)
+    }
+   }
+
    const formatCurrency = (val: number) => 
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val)
 
@@ -141,95 +261,72 @@ export default function MarketingKPIs() {
                   <CardTitle className="text-sm font-bold uppercase tracking-widest italic text-muted-foreground">Calibration</CardTitle>
                </CardHeader>
                <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-bold uppercase text-muted-foreground opacity-50">Ad spend</Label>
-                       <InputGroup>
-                         <InputGroupAddon className="bg-muted/50 border-r">
-                           <InputGroupText className="font-bold">$</InputGroupText>
-                         </InputGroupAddon>
-                         <InputGroupInput type="number" className="h-8 text-xs font-mono text-center" value={adSpend} onChange={(e) => setAdSpend(Number(e.target.value))} />
-                         <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden">
-                           <InputGroupButton onClick={() => setAdSpend(Math.max(0, adSpend - 100))} className="h-full rounded-none border-r w-8 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                           <InputGroupButton onClick={() => setAdSpend(adSpend + 100)} className="h-full rounded-none w-8 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                         </InputGroupAddon>
-                       </InputGroup>
-                    </div>
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-bold uppercase text-muted-foreground opacity-50">Revenue</Label>
-                       <InputGroup>
-                         <InputGroupAddon className="bg-muted/50 border-r">
-                           <InputGroupText className="font-bold">$</InputGroupText>
-                         </InputGroupAddon>
-                         <InputGroupInput type="number" className="h-8 text-xs font-mono text-center" value={revenue} onChange={(e) => setRevenue(Number(e.target.value))} />
-                         <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden">
-                           <InputGroupButton onClick={() => setRevenue(Math.max(0, revenue - 1000))} className="h-full rounded-none border-r w-8 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                           <InputGroupButton onClick={() => setRevenue(revenue + 1000)} className="h-full rounded-none w-8 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                         </InputGroupAddon>
-                       </InputGroup>
-                    </div>
-                    <div className="space-y-2">
-                       <div className="flex items-center justify-between">
-                         <Label className="text-[10px] font-bold uppercase text-muted-foreground opacity-50">Gross Margin</Label>
-                         <KpiInfo description="The percentage of revenue surpassing the cost of goods sold. Crucial for POAS calculations." />
-                       </div>
-                       <InputGroup>
-                         <InputGroupAddon className="p-0 border-r">
-                           <InputGroupButton onClick={() => setGrossMargin(Math.max(0, grossMargin - 1))} className="h-full rounded-none w-8 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                         </InputGroupAddon>
-                         <InputGroupInput type="number" className="h-8 text-xs font-mono text-center" value={grossMargin} onChange={(e) => setGrossMargin(Number(e.target.value))} />
-                         <InputGroupAddon align="inline-end" className="bg-muted/50 border-l px-0">
-                           <InputGroupText className="font-bold px-2">%</InputGroupText>
-                           <InputGroupButton onClick={() => setGrossMargin(Math.min(100, grossMargin + 1))} className="h-full rounded-none border-l w-8 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                         </InputGroupAddon>
-                       </InputGroup>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 pt-4 border-t border-dashed">
-                       <div className="space-y-1">
-                          <Label className="text-[10px] font-bold uppercase text-muted-foreground opacity-50">Impressions</Label>
-                          <InputGroup>
-                            <InputGroupInput type="number" className="h-8 text-xs font-mono text-center" value={impressions} onChange={(e) => setImpressions(Number(e.target.value))} />
-                            <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden">
-                              <InputGroupButton onClick={() => setImpressions(Math.max(0, impressions - 1000))} className="h-full rounded-none border-r w-7 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                              <InputGroupButton onClick={() => setImpressions(impressions + 1000)} className="h-full rounded-none w-7 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                            </InputGroupAddon>
-                          </InputGroup>
-                       </div>
-                       <div className="space-y-1">
-                          <Label className="text-[10px] font-bold uppercase text-muted-foreground opacity-50">Clicks</Label>
-                           <InputGroup>
-                             <InputGroupInput type="number" className="h-8 text-xs font-mono text-center" value={clicks} onChange={(e) => setClicks(Number(e.target.value))} />
-                             <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden">
-                               <InputGroupButton onClick={() => setClicks(Math.max(0, clicks - 100))} className="h-full rounded-none border-r w-7 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                               <InputGroupButton onClick={() => setClicks(clicks + 100)} className="h-full rounded-none w-7 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                             </InputGroupAddon>
-                           </InputGroup>
+                  <FieldGroup className="gap-5">
+                    <NumericField
+                      label="Ad spend"
+                      value={adSpend}
+                      onChange={setAdSpend}
+                      prefix="$"
+                      step={100}
+                    />
+                    
+                    <NumericField
+                      label="Revenue"
+                      value={revenue}
+                      onChange={setRevenue}
+                      prefix="$"
+                      step={1000}
+                    />
 
-                       </div>
+                    <NumericField
+                      label="Gross Margin"
+                      value={grossMargin}
+                      onChange={setGrossMargin}
+                      suffix="%"
+                      step={1}
+                      description="The percentage of revenue surpassing the cost of goods sold. Crucial for POAS calculations."
+                    />
+
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-dashed">
+                      <NumericField
+                        label="Impressions"
+                        value={impressions}
+                        onChange={setImpressions}
+                        step={1000}
+                      />
+                      <NumericField
+                        label="Clicks"
+                        value={clicks}
+                        onChange={setClicks}
+                        step={100}
+                      />
                     </div>
-                    <div className="space-y-2">
-                       <Label className="text-[10px] font-bold uppercase text-muted-foreground opacity-50">New Customers</Label>
-                       <InputGroup>
-                         <InputGroupInput type="number" className="h-8 text-xs font-mono text-center" value={newCustomers} onChange={(e) => setNewCustomers(Number(e.target.value))} />
-                         <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden">
-                            <InputGroupButton onClick={() => setNewCustomers(Math.max(0, newCustomers - 1))} className="h-full rounded-none border-r w-8 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                            <InputGroupButton onClick={() => setNewCustomers(newCustomers + 1)} className="h-full rounded-none w-8 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                         </InputGroupAddon>
-                       </InputGroup>
-                    </div>
-                    <div className="space-y-2 pt-4 border-t border-dashed">
-                       <Label className="text-[10px] font-bold uppercase text-muted-foreground opacity-50">Estimated LTV</Label>
-                       <InputGroup>
-                         <InputGroupAddon className="bg-muted/50 border-r">
-                           <InputGroupText className="font-bold">$</InputGroupText>
-                         </InputGroupAddon>
-                         <InputGroupInput type="number" className="h-8 text-xs font-mono text-center" value={avgLtv} onChange={(e) => setAvgLtv(Number(e.target.value))} />
-                         <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden">
-                           <InputGroupButton onClick={() => setAvgLtv(Math.max(0, avgLtv - 100))} className="h-full rounded-none border-r w-8 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                           <InputGroupButton onClick={() => setAvgLtv(avgLtv + 100)} className="h-full rounded-none w-8 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                         </InputGroupAddon>
-                       </InputGroup>
-                    </div>
+
+                    <NumericField
+                      label="New Customers"
+                      value={newCustomers}
+                      onChange={setNewCustomers}
+                      step={1}
+                    />
+
+                    <NumericField
+                      label="Estimated LTV"
+                      value={avgLtv}
+                      onChange={setAvgLtv}
+                      prefix="$"
+                      step={100}
+                    />
+                  </FieldGroup>
+
+                  <div className="pt-6">
+                    <Button 
+                      className="w-full text-xs font-bold uppercase tracking-[0.15em] h-10 border-foreground/20 hover:bg-foreground hover:text-background transition-all" 
+                      variant="outline"
+                      onClick={handleSave}
+                      disabled={isSaving}
+                    >
+                      {isSaving ? "Saving..." : "Secure Workspace Persistence"}
+                    </Button>
                   </div>
                </CardContent>
              </Card>
@@ -295,19 +392,19 @@ export default function MarketingKPIs() {
                               <CardTitle className="text-xs font-bold uppercase tracking-widest italic text-muted-foreground">Benchmarks</CardTitle>
                            </CardHeader>
                            <CardContent className="h-[220px]">
-                              <ResponsiveContainer width="100%" height="100%">
+                              <ChartContainer config={chartConfig} className="h-full w-full">
                                  <BarChart data={benchmarkData} layout="vertical" margin={{ left: 20 }}>
                                     <XAxis type="number" hide />
                                     <YAxis dataKey="name" type="category" fontSize={10} tickLine={false} axisLine={false} width={80} dy={2} />
-                                    <Tooltip cursor={{ fill: 'transparent' }} />
+                                    <ChartTooltip content={<ChartTooltipContent />} cursor={{ fill: 'transparent' }} />
                                     <Bar dataKey="value" radius={[0, 2, 2, 0]} barSize={14}>
                                        {benchmarkData.map((entry, index) => (
-                                          <Cell key={`cell-${index}`} fill={entry.value >= entry.target ? '#64748b' : '#cbd5e1'} />
+                                          <Cell key={`cell-${index}`} fill={entry.value >= entry.target ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground)/0.4)'} />
                                        ))}
                                     </Bar>
-                                    <Bar dataKey="target" fill="#f1f5f9" radius={[0, 2, 2, 0]} barSize={14} />
+                                    <Bar dataKey="target" fill="hsl(var(--muted)/.5)" radius={[0, 2, 2, 0]} barSize={14} />
                                  </BarChart>
-                              </ResponsiveContainer>
+                              </ChartContainer>
                            </CardContent>
                         </Card>
 
@@ -316,13 +413,14 @@ export default function MarketingKPIs() {
                               <CardTitle className="text-xs font-bold uppercase tracking-widest italic text-muted-foreground">Strategic Balance</CardTitle>
                            </CardHeader>
                            <CardContent className="h-[220px]">
-                              <ResponsiveContainer width="100%" height="100%">
+                              <ChartContainer config={chartConfig} className="h-full w-full">
                                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                                    <PolarGrid stroke="#e2e8f0" />
+                                    <PolarGrid stroke="hsl(var(--border))" />
                                     <PolarAngleAxis dataKey="subject" fontSize={10} />
-                                    <Radar name="Strategy" dataKey="A" stroke="#64748b" fill="#64748b" fillOpacity={0.1} />
+                                    <ChartTooltip content={<ChartTooltipContent />} />
+                                    <Radar name="Strategy" dataKey="A" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.1} />
                                  </RadarChart>
-                              </ResponsiveContainer>
+                              </ChartContainer>
                            </CardContent>
                         </Card>
                      </div>

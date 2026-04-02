@@ -68,6 +68,72 @@ const barChartConfig = {
   value: { label: "Amount" },
 } satisfies ChartConfig
 
+// Reusable numeric input pattern for premium standardization.
+function NumericField({
+  label,
+  id,
+  value,
+  onChange,
+  prefix,
+  suffix,
+  step = 1,
+  min = 0,
+  className,
+  inline = false
+}: {
+  label: string
+  id?: string
+  value: number
+  onChange: (val: number) => void
+  prefix?: string
+  suffix?: string
+  step?: number
+  min?: number
+  className?: string
+  inline?: boolean
+}) {
+  return (
+    <Field className={cn(className, inline && "flex-row items-center justify-between gap-4")}>
+      <FieldLabel htmlFor={id} className={cn("text-[10px] font-black uppercase tracking-widest text-muted-foreground/80", inline && "mb-0")}>{label}</FieldLabel>
+      <InputGroup className={cn("hover:border-primary/40 transition-colors", inline ? "w-44" : "w-full")}>
+        {prefix && (
+          <InputGroupAddon align="inline-start" className="bg-muted/30 border-r px-2.5">
+            <InputGroupText className="font-bold text-[10px]">{prefix}</InputGroupText>
+          </InputGroupAddon>
+        )}
+        <InputGroupInput
+          id={id}
+          type="number"
+          className="text-center font-bold text-xs"
+          value={value}
+          onChange={e => onChange(Number(e.target.value))}
+          step={step}
+          min={min}
+        />
+        {suffix && (
+          <InputGroupAddon align="inline-end" className="bg-muted/30 border-l px-2.5">
+            <InputGroupText className="font-bold text-[10px]">{suffix}</InputGroupText>
+          </InputGroupAddon>
+        )}
+        <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden bg-muted/10 h-full">
+          <InputGroupButton
+            onClick={() => onChange(Math.max(min, value - step))}
+            className="h-full rounded-none border-r w-8 hover:bg-muted/50 active:bg-muted/80 transition-colors"
+          >
+            <MinusIcon className="h-3.5 w-3.5 stroke-[3]" />
+          </InputGroupButton>
+          <InputGroupButton
+            onClick={() => onChange(value + step)}
+            className="h-full rounded-none w-8 hover:bg-muted/50 active:bg-muted/80 transition-colors"
+          >
+            <PlusIcon className="h-3.5 w-3.5 stroke-[3]" />
+          </InputGroupButton>
+        </InputGroupAddon>
+      </InputGroup>
+    </Field>
+  )
+}
+
 export default function ProfitMarginCalculator() {
   const [price, setPrice]               = React.useState<number>(100)
   const [units, setUnits]               = React.useState<number>(50)
@@ -189,63 +255,28 @@ export default function ProfitMarginCalculator() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <FieldGroup>
-                    <Field>
-                      <FieldLabel>Sale Price per Unit</FieldLabel>
-                      <InputGroup>
-                        <InputGroupAddon className="bg-muted/50 border-r">
-                          <InputGroupText className="font-bold text-xs">$</InputGroupText>
-                        </InputGroupAddon>
-                        <InputGroupInput
-                          id="price"
-                          type="number"
-                          className="text-center"
-                          value={price}
-                          onChange={e => setPrice(Number(e.target.value))}
-                        />
-                        <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden">
-                          <InputGroupButton onClick={() => setPrice(Math.max(0, price - 1))} className="h-full rounded-none border-r w-8 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                          <InputGroupButton onClick={() => setPrice(price + 1)} className="h-full rounded-none w-8 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                        </InputGroupAddon>
-                      </InputGroup>
-                    </Field>
-
-                    <Field>
-                      <FieldLabel>Units Sold</FieldLabel>
-                      <InputGroup>
-                        <InputGroupInput
-                          id="units"
-                          type="number"
-                          className="text-center"
-                          value={units}
-                          onChange={e => setUnits(Number(e.target.value))}
-                        />
-                        <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden">
-                          <InputGroupButton onClick={() => setUnits(Math.max(0, units - 10))} className="h-full rounded-none border-r w-8 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                          <InputGroupButton onClick={() => setUnits(units + 10)} className="h-full rounded-none w-8 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                        </InputGroupAddon>
-                      </InputGroup>
-                    </Field>
-
-                    <Field>
-                      <FieldLabel>Cost per Unit (COGS)</FieldLabel>
-                      <InputGroup>
-                        <InputGroupAddon className="bg-muted/50 border-r">
-                          <InputGroupText className="font-bold text-xs">$</InputGroupText>
-                        </InputGroupAddon>
-                        <InputGroupInput
-                          id="cogs"
-                          type="number"
-                          className="text-center"
-                          value={cogsPerUnit}
-                          onChange={e => setCogsPerUnit(Number(e.target.value))}
-                        />
-                        <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden">
-                          <InputGroupButton onClick={() => setCogsPerUnit(Math.max(0, cogsPerUnit - 1))} className="h-full rounded-none border-r w-8 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                          <InputGroupButton onClick={() => setCogsPerUnit(cogsPerUnit + 1)} className="h-full rounded-none w-8 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                        </InputGroupAddon>
-                      </InputGroup>
-                    </Field>
+                  <FieldGroup className="gap-5">
+                    <NumericField
+                      label="Sale Price per Unit"
+                      id="price"
+                      value={price}
+                      onChange={setPrice}
+                      prefix="$"
+                    />
+                    <NumericField
+                      label="Units Sold"
+                      id="units"
+                      value={units}
+                      onChange={setUnits}
+                      step={10}
+                    />
+                    <NumericField
+                      label="Cost per Unit (COGS)"
+                      id="cogs"
+                      value={cogsPerUnit}
+                      onChange={setCogsPerUnit}
+                      prefix="$"
+                    />
                   </FieldGroup>
                 </CardContent>
               </Card>
@@ -262,39 +293,34 @@ export default function ProfitMarginCalculator() {
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Field>
-                    <FieldLabel>Monthly Ad Spend</FieldLabel>
-                    <InputGroup>
-                      <InputGroupAddon className="bg-muted/50 border-r">
-                        <InputGroupText className="font-bold text-xs">$</InputGroupText>
-                      </InputGroupAddon>
-                      <InputGroupInput
-                        id="adSpend"
-                        type="number"
-                        className="text-center"
-                        value={adSpend}
-                        onChange={e => setAdSpend(Number(e.target.value))}
-                      />
-                      <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden">
-                        <InputGroupButton onClick={() => setAdSpend(Math.max(0, adSpend - 100))} className="h-full rounded-none border-r w-8 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                        <InputGroupButton onClick={() => setAdSpend(adSpend + 100)} className="h-full rounded-none w-8 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                      </InputGroupAddon>
-                    </InputGroup>
-                  </Field>
+                  <NumericField
+                    label="Monthly Ad Spend"
+                    id="adSpend"
+                    value={adSpend}
+                    onChange={setAdSpend}
+                    prefix="$"
+                    step={100}
+                  />
 
                   {/* Dynamic expenses */}
                   {expenses.length > 0 && (
-                    <div className="pt-2 border-t space-y-2">
+                    <div className="pt-4 border-t space-y-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Custom Overheads</p>
                       {expenses.map(expense => (
-                        <div key={expense.id} className="flex items-center gap-2">
-                          <Input
-                            placeholder="Expense name"
-                            className="flex-1 h-9"
-                            value={expense.name}
-                            onChange={e => updateExpense(expense.id, "name", e.target.value)}
-                          />
-                          <InputGroup className="w-28">
-                            <InputGroupAddon className="bg-muted/50 border-r">
+                        <div key={expense.id} className="flex flex-col gap-2 p-2 rounded-lg border bg-muted/10">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              placeholder="Expense name (e.g. Rent)"
+                              className="flex-1 h-8 text-xs bg-background"
+                              value={expense.name}
+                              onChange={e => updateExpense(expense.id, "name", e.target.value)}
+                            />
+                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-destructive/70 hover:text-destructive transition-colors" onClick={() => removeExpense(expense.id)}>
+                              <TrashIcon className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <InputGroup className="h-8 bg-background">
+                            <InputGroupAddon align="inline-start" className="bg-muted/30 border-r px-2">
                               <InputGroupText className="text-[10px] font-bold">$</InputGroupText>
                             </InputGroupAddon>
                             <InputGroupInput
@@ -303,20 +329,27 @@ export default function ProfitMarginCalculator() {
                               value={expense.amount}
                               onChange={e => updateExpense(expense.id, "amount", Number(e.target.value))}
                             />
-                            <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden">
-                              <InputGroupButton onClick={() => updateExpense(expense.id, "amount", Math.max(0, expense.amount - 100))} className="h-full rounded-none border-r w-7 shrink-0"><MinusIcon className="h-2.5 w-2.5" /></InputGroupButton>
-                              <InputGroupButton onClick={() => updateExpense(expense.id, "amount", expense.amount + 100)} className="h-full rounded-none w-7 shrink-0"><PlusIcon className="h-2.5 w-2.5" /></InputGroupButton>
+                            <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden bg-muted/10 h-full">
+                              <InputGroupButton
+                                onClick={() => updateExpense(expense.id, "amount", Math.max(0, expense.amount - 100))}
+                                className="h-full rounded-none border-r w-7 shrink-0"
+                              >
+                                <MinusIcon className="h-2.5 w-2.5" />
+                              </InputGroupButton>
+                              <InputGroupButton
+                                onClick={() => updateExpense(expense.id, "amount", expense.amount + 100)}
+                                className="h-full rounded-none w-7 shrink-0"
+                              >
+                                <PlusIcon className="h-2.5 w-2.5" />
+                              </InputGroupButton>
                             </InputGroupAddon>
                           </InputGroup>
-                          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-destructive" onClick={() => removeExpense(expense.id)}>
-                            <TrashIcon className="h-4 w-4" />
-                          </Button>
                         </div>
                       ))}
                     </div>
                   )}
                   {expenses.length === 0 && (
-                    <p className="text-xs text-center text-muted-foreground py-2 italic">No additional expenses added.</p>
+                    <p className="text-xs text-center text-muted-foreground py-2 italic opacity-60">No additional expenses added.</p>
                   )}
                 </CardContent>
               </Card>
@@ -341,49 +374,32 @@ export default function ProfitMarginCalculator() {
                     </CardTitle>
                     <CardDescription className="text-[10px]">Uses sale price as AOV. Ad spend is shared.</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <FieldGroup>
-                      <Field>
-                        <FieldLabel>Monthly Visitors</FieldLabel>
-                        <InputGroup>
-                          <InputGroupInput
-                            type="number"
-                            className="text-center"
-                            value={ceVisitors}
-                            onChange={e => setCeVisitors(Number(e.target.value))}
-                          />
-                          <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden">
-                            <InputGroupButton onClick={() => setCeVisitors(Math.max(0, ceVisitors - 500))} className="h-full rounded-none border-r w-8 shrink-0"><MinusIcon className="h-3 w-3" /></InputGroupButton>
-                            <InputGroupButton onClick={() => setCeVisitors(ceVisitors + 500)} className="h-full rounded-none w-8 shrink-0"><PlusIcon className="h-3 w-3" /></InputGroupButton>
-                          </InputGroupAddon>
-                        </InputGroup>
-                      </Field>
-                      <Field>
-                        <FieldLabel>Conversion Rate</FieldLabel>
-                        <InputGroup>
-                          <InputGroupInput
-                            type="number"
-                            className="text-center"
-                            step={0.1}
-                            value={ceConvRate}
-                            onChange={e => setCeConvRate(Number(e.target.value))}
-                          />
-                          <InputGroupAddon align="inline-end" className="bg-muted/50 border-l px-2">
-                            <InputGroupText className="text-xs font-bold">%</InputGroupText>
-                          </InputGroupAddon>
-                        </InputGroup>
-                      </Field>
+                  <CardContent className="space-y-5">
+                    <FieldGroup className="gap-4">
+                      <NumericField
+                        label="Monthly Visitors"
+                        value={ceVisitors}
+                        onChange={setCeVisitors}
+                        step={500}
+                      />
+                      <NumericField
+                        label="Conversion Rate"
+                        value={ceConvRate}
+                        onChange={setCeConvRate}
+                        suffix="%"
+                        step={0.1}
+                      />
                     </FieldGroup>
 
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t">
                       {[
-                        { label: "Conversions",   value: Math.round(ceConversions).toString() },
+                        { label: "Conversions",   value: Math.round(ceConversions).toLocaleString() },
                         { label: "CE Revenue",    value: formatCurrency(ceRevenue) },
                         { label: "CAC",           value: formatCurrency(ceCac) },
                         { label: "LTV:CAC",       value: `${ceLtvCac.toFixed(1)}x` },
                       ].map(({ label, value }) => (
-                        <div key={label} className="rounded-lg bg-background border p-2">
-                          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
+                        <div key={label} className="rounded-xl bg-background border p-3 border-primary/10 shadow-sm">
+                          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">{label}</p>
                           <p className="text-sm font-black text-foreground mt-0.5">{value}</p>
                         </div>
                       ))}
@@ -523,62 +539,86 @@ export default function ProfitMarginCalculator() {
               </div>
 
               {/* P&L Statement */}
-              <Card className="bg-card/50 overflow-hidden">
-                <CardHeader className="bg-muted/10 border-b">
+              <Card className="bg-card/40 border-primary/10 overflow-hidden shadow-sm">
+                <CardHeader className="bg-muted/5 border-b py-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground/70">Simulated P&L Statement</CardTitle>
-                    <KpiInfo description="A complete fiscal breakdown including COGS, Ad Spend, and estimated Net Profitability." />
+                    <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/80">Fiscal P&L Simulation Report</CardTitle>
+                    <div className="bg-muted/20 text-[10px] font-bold px-2 py-0.5 rounded border border-border/50 text-muted-foreground uppercase">{new Date().toLocaleDateString(undefined, { month: "short", year: "numeric" })}</div>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-6 space-y-4">
-                  <div className="flex justify-between items-center py-2 border-b border-muted">
-                    <span className="text-sm font-medium text-foreground">Revenue ({units} units @ {formatCurrency(price)})</span>
-                    <span className="font-black text-green-600 dark:text-green-400">
-                      <NumberFlow value={isMounted ? totalRevenue : 0} format={{ style: "currency", currency: "USD", maximumFractionDigits: 0 }} />
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-muted">
-                    <span className="text-sm font-medium text-foreground">Total COGS ({units} units @ {formatCurrency(cogsPerUnit)})</span>
-                    <span className="font-black text-red-500/80">
-                      -<NumberFlow value={isMounted ? totalCogs : 0} format={{ style: "currency", currency: "USD", maximumFractionDigits: 0 }} />
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 bg-primary/10 px-3 rounded-lg border border-primary/20">
-                    <span className="text-sm font-black text-primary uppercase">Gross Profit</span>
-                    <span className="font-black text-primary text-lg">
-                      <NumberFlow value={isMounted ? grossProfit : 0} format={{ style: "currency", currency: "USD", maximumFractionDigits: 0 }} />
-                    </span>
-                  </div>
-
-                  <div className="space-y-1.5 px-1">
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Ad Spend
-                      </span>
-                      <span className="text-sm font-bold text-red-400">-{formatCurrency(adSpend)}</span>
-                    </div>
-                    {expenses.map(exp => (
-                      <div key={exp.id} className="flex justify-between items-center py-1">
-                        <span className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-orange-400" /> {exp.name || "Unnamed"}
-                        </span>
-                        <span className="text-sm font-bold text-red-400">-{formatCurrency(exp.amount)}</span>
+                <CardContent className="pt-6 px-6 pb-8 space-y-6">
+                  {/* Revenue Section */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-baseline">
+                      <div className="space-y-0.5">
+                        <span className="text-sm font-black text-foreground uppercase tracking-tight">Gross Revenue</span>
+                        <p className="text-[10px] text-muted-foreground font-medium">{units.toLocaleString()} units sold at {formatCurrency(price)}/ea</p>
                       </div>
-                    ))}
+                      <span className="text-xl font-black text-green-600 dark:text-green-400 tabular-nums">
+                        <NumberFlow value={isMounted ? totalRevenue : 0} format={{ style: "currency", currency: "USD", maximumFractionDigits: 0 }} />
+                      </span>
+                    </div>
+                    <div className="h-px bg-gradient-to-r from-muted/50 via-border to-muted/50" />
                   </div>
 
-                  <div className="flex justify-between items-center py-4 mt-2 border-t-2 border-primary/30 bg-primary/5 rounded-xl px-4">
-                    <div className="flex flex-col">
-                      <span className="text-xl font-black text-foreground">Net Monthly Profit</span>
-                      <span className="text-[10px] font-black text-primary uppercase tracking-widest">Final Simulation Result</span>
+                  {/* COGS Section */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-baseline">
+                      <div className="space-y-0.5">
+                        <span className="text-sm font-black text-foreground uppercase tracking-tight">Direct Costs (COGS)</span>
+                        <p className="text-[10px] text-muted-foreground font-medium">Manufacturing & Fulfillment @ {formatCurrency(cogsPerUnit)}/unit</p>
+                      </div>
+                      <span className="text-lg font-black text-red-500/80 tabular-nums">
+                        -<NumberFlow value={isMounted ? totalCogs : 0} format={{ style: "currency", currency: "USD", maximumFractionDigits: 0 }} />
+                      </span>
                     </div>
-                    <div className="flex flex-col items-end">
-                      <span className={cn("text-3xl font-black", netProfit >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")}>
-                        <NumberFlow value={isMounted ? netProfit : 0} format={{ style: "currency", currency: "USD", maximumFractionDigits: 0 }} />
+                    <div className="flex justify-between items-center py-3 bg-primary/10 px-4 rounded-xl border border-primary/20 shadow-inner">
+                      <span className="text-xs font-black text-primary uppercase tracking-widest">Gross Profit Architecture</span>
+                      <span className="font-black text-primary text-2xl tabular-nums">
+                        <NumberFlow value={isMounted ? grossProfit : 0} format={{ style: "currency", currency: "USD", maximumFractionDigits: 0 }} />
                       </span>
-                      <span className="text-xs font-bold text-muted-foreground uppercase">
-                        <NumberFlow value={isMounted ? netMargin : 0} format={{ maximumFractionDigits: 1 }} />% Margin Performance
-                      </span>
+                    </div>
+                  </div>
+
+                  {/* Operating Expenses */}
+                  <div className="space-y-4 pt-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-2">Operating Expenditures (OpEx)</p>
+                    <div className="space-y-2.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-bold text-muted-foreground uppercase flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Digital Marketing (Ad Spend)
+                        </span>
+                        <span className="font-black text-red-400 tabular-nums">-{formatCurrency(adSpend)}</span>
+                      </div>
+                      {expenses.map(exp => (
+                        <div key={exp.id} className="flex justify-between items-center text-xs">
+                          <span className="font-bold text-muted-foreground uppercase flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-orange-400" /> {exp.name || "Fixed Expense"}
+                          </span>
+                          <span className="font-black text-red-400 tabular-nums">-{formatCurrency(exp.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Final Net Profit */}
+                  <div className="pt-6 mt-4 border-t-2 border-dashed border-border/50">
+                    <div className="flex justify-between items-center bg-foreground text-background p-6 rounded-2xl shadow-xl">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-2xl font-black tracking-tighter uppercase italic">Net Monthly Profit</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] font-black text-background/60 uppercase tracking-[0.2em]">{netProfit >= 0 ? "Profitable Strategy" : "Budget Optimization Needed"}</span>
+                          {roas > 0 && <span className="bg-background/20 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">{roas.toFixed(1)}x ROAS</span>}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className={cn("text-4xl font-black tabular-nums tracking-tighter", netProfit >= 0 ? "text-green-400" : "text-red-400")}>
+                          <NumberFlow value={isMounted ? netProfit : 0} format={{ style: "currency", currency: "USD", maximumFractionDigits: 0 }} />
+                        </span>
+                        <span className="text-xs font-black uppercase tracking-widest text-background/80 mt-1">
+                          <NumberFlow value={isMounted ? netMargin : 0} format={{ maximumFractionDigits: 1 }} />% Net Margin
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -591,9 +631,14 @@ export default function ProfitMarginCalculator() {
                     {saveMsg}
                   </span>
                 )}
-                <Button onClick={handleSave} disabled={saving} className="gap-2 font-bold">
+                <Button 
+                  onClick={handleSave} 
+                  disabled={saving} 
+                  variant="outline"
+                  className="text-xs font-bold uppercase tracking-[0.15em] h-10 border-foreground/20 hover:bg-foreground hover:text-background transition-all"
+                >
                   <BookmarkIcon className="h-4 w-4" />
-                  {saving ? "Saving…" : "Save Simulation"}
+                  {saving ? "Saving…" : "Secure Workspace Persistence"}
                 </Button>
               </div>
 
