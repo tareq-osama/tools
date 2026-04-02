@@ -34,6 +34,17 @@ const data = {
       url: "/",
       icon: HomeIcon,
     },
+
+    {
+      title: "Lead Gen Funnel",
+      url: "/lead-gen-funnel",
+      icon: CalculatorIcon,
+    },
+    {
+      title: "Break-Even ROAS",
+      url: "/break-even-roas",
+      icon: CalculatorIcon,
+    },
     {
       title: "Revenue Calculator",
       url: "/revenue-calculator",
