@@ -28,7 +28,7 @@ import {
   InputGroupText,
 } from "@/components/ui/input-group";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { PlusIcon, MinusIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, MinusIcon } from "@heroicons/react/24/solid";
 import {
   BarChart,
   Bar,
