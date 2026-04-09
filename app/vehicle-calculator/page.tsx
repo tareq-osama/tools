@@ -30,7 +30,7 @@ import {
   LinkIcon,
   CurrencyDollarIcon,
   ArrowDownTrayIcon,
-  CloudArrowUpIcon, // <-- NEW IMPORT
+  CloudArrowUpIcon,
 } from "@heroicons/react/24/solid";
 import {
   BarChart,
@@ -55,9 +55,6 @@ import {
 import { Field, FieldLabel } from "@/components/ui/field";
 
 const STORAGE_KEY = "vehicle-calculator-v2";
-
-// Make sure this matches the slug of your collection in Corvex exactly
-const COLLECTION_SLUG = "vehicles";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -366,8 +363,6 @@ function NumericField({
   );
 }
 
-// ─── Fee Row ─────────────────────────────────────────────────────────────────
-
 function FeeRow({
   fee,
   basePrice,
@@ -455,8 +450,6 @@ function FeeRow({
   );
 }
 
-// ─── Vehicle Panel ────────────────────────────────────────────────────────────
-
 function VehiclePanel({
   vehicle,
   usdRate,
@@ -519,9 +512,7 @@ function VehiclePanel({
 
   return (
     <div className="space-y-6">
-      {/* Top Section: Media & Headline */}
       <div className="flex flex-col md:flex-row gap-6">
-        {/* Left Side: Image & Links */}
         <div className="w-full md:w-1/3 flex flex-col gap-3">
           {vehicle.imageUrl ? (
             <img
@@ -570,7 +561,6 @@ function VehiclePanel({
           </div>
         </div>
 
-        {/* Right Side: Headline & Giant Total Banner */}
         <div className="flex-1 flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <Input
@@ -600,7 +590,6 @@ function VehiclePanel({
             )}
           </div>
 
-          {/* Prominent Green Total Cost Banner */}
           <div className="bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/50 p-5 rounded-2xl flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mt-auto">
             <div>
               <p className="text-xs font-bold text-emerald-700/70 dark:text-emerald-400/70 uppercase tracking-wider mb-1">
@@ -627,7 +616,6 @@ function VehiclePanel({
         </div>
       </div>
 
-      {/* Sub KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <KpiCard label="Base Price" value={calc.basePrice} />
         <KpiCard label="Total Fees" value={calc.totalFees} highlight="red" />
@@ -645,7 +633,6 @@ function VehiclePanel({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-6">
-          {/* Base price */}
           <Card className="shadow-none border-border/50">
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="text-sm">Base Price</CardTitle>
@@ -664,7 +651,6 @@ function VehiclePanel({
             </CardContent>
           </Card>
 
-          {/* Financing */}
           <Card className="shadow-none border-border/50">
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="text-sm">
@@ -750,7 +736,6 @@ function VehiclePanel({
         </div>
 
         <div className="space-y-6">
-          {/* Fees */}
           <Card className="shadow-none border-border/50">
             <CardHeader className="pb-2 pt-4 px-4">
               <button
@@ -796,7 +781,6 @@ function VehiclePanel({
             )}
           </Card>
 
-          {/* Pie chart breakdown */}
           <Card className="shadow-none border-border/50">
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="text-sm">Cost Breakdown</CardTitle>
@@ -848,8 +832,6 @@ function VehiclePanel({
     </div>
   );
 }
-
-// ─── Comparison View ──────────────────────────────────────────────────────────
 
 function ComparisonView({
   vehicles,
@@ -958,7 +940,6 @@ function ComparisonView({
         ))}
       </div>
 
-      {/* Bar chart */}
       <Card className="shadow-none border-border/50">
         <CardHeader className="pb-2 pt-4 px-4">
           <CardTitle className="text-sm">Side-by-Side Cost Breakdown</CardTitle>
@@ -1012,23 +993,25 @@ function ComparisonView({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function VehicleCalculatorPage() {
-  const [vehicles, setVehicles] = React.useState<Vehicle[]>(() => {
-    if (typeof window === "undefined") return DEFAULT_STATE;
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : DEFAULT_STATE;
-    } catch {
-      return DEFAULT_STATE;
-    }
-  });
-
+  const [isMounted, setIsMounted] = React.useState(false);
+  const [vehicles, setVehicles] = React.useState<Vehicle[]>(DEFAULT_STATE);
   const [usdRate, setUsdRate] = React.useState(35.5);
   const [activeTab, setActiveTab] = React.useState("vehicle-0");
-  const [isSyncing, setIsSyncing] = React.useState(false); // NEW: Track sync state
+  const [isSyncing, setIsSyncing] = React.useState(false);
 
   React.useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles));
-  }, [vehicles]);
+    setIsMounted(true);
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) setVehicles(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  React.useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles));
+    }
+  }, [vehicles, isMounted]);
 
   const updateVehicle = (id: string, updated: Vehicle) =>
     setVehicles((vs) => vs.map((v) => (v.id === id ? updated : v)));
@@ -1077,24 +1060,31 @@ export default function VehicleCalculatorPage() {
     }
   };
 
-  // ─── UPDATED: SAVE TO CMS API FUNCTION ──────────────────────────────────────
+  // ─── SAVE TO CMS API FUNCTION ──────────────────────────────────────────────
 
   const saveToCMS = async () => {
     setIsSyncing(true);
 
     try {
       const items = vehicles.map((v) => ({
+        // 1. System fields must be lowercase
+        title: v.name,
+        slug:
+          v.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") +
+          "-" +
+          v.id.split("-")[0],
+
+        // 2. Custom fields mapped EXACTLY to your Postman schema
         Name: v.name,
         "Image URL": v.imageUrl || "",
         "Purchase Link": v.purchaseLink || "",
         "Base Price": v.basePrice,
         "Down Payment": v.downPayment,
         "Installment Months": v.installmentMonths,
-        "Annual Interest Rate": v.annualInterestRate,
+        Number: v.annualInterestRate, // <-- Mapped to your accidental "Number" field name!
         "Fees Data": JSON.stringify(v.fees),
       }));
 
-      // We call our own Next.js API route instead of Corvex directly
       const res = await fetch("/api/save-vehicles", {
         method: "POST",
         headers: {
@@ -1117,6 +1107,7 @@ export default function VehicleCalculatorPage() {
       setIsSyncing(false);
     }
   };
+
   const exportJSON = () => {
     const dataStr = JSON.stringify(vehicles, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
@@ -1165,6 +1156,17 @@ export default function VehicleCalculatorPage() {
     URL.revokeObjectURL(url);
   };
 
+  // Prevent hydration mismatch errors
+  if (!isMounted) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <p className="text-muted-foreground animate-pulse">
+          Loading calculator...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider
       style={
@@ -1179,7 +1181,6 @@ export default function VehicleCalculatorPage() {
         <SiteHeader />
         <div className="flex flex-1 flex-col">
           <div className="flex flex-1 flex-col gap-4 p-4 md:p-8 max-w-5xl mx-auto w-full">
-            {/* Page header */}
             <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 pb-6 border-b">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-3">
@@ -1197,7 +1198,6 @@ export default function VehicleCalculatorPage() {
                   </div>
                 </div>
 
-                {/* Add & Export vehicle buttons */}
                 <div className="flex flex-wrap gap-2 mt-3 items-center">
                   <Button
                     size="sm"
@@ -1218,7 +1218,6 @@ export default function VehicleCalculatorPage() {
 
                   <div className="w-px h-6 bg-border mx-1 hidden sm:block"></div>
 
-                  {/* SAVE TO CMS BUTTON */}
                   <Button
                     size="sm"
                     variant="default"
@@ -1258,7 +1257,6 @@ export default function VehicleCalculatorPage() {
                 </div>
               </div>
 
-              {/* Currency Settings */}
               <div className="flex flex-col gap-1.5 bg-card p-3 rounded-xl border w-full md:w-auto shadow-sm">
                 <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider flex items-center gap-1">
                   <CurrencyDollarIcon className="h-3.5 w-3.5" />
@@ -1280,7 +1278,6 @@ export default function VehicleCalculatorPage() {
               </div>
             </div>
 
-            {/* Info note */}
             <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/30 rounded-lg p-3">
               <ExclamationTriangleIcon className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-500" />
               <span>
@@ -1292,7 +1289,6 @@ export default function VehicleCalculatorPage() {
               </span>
             </div>
 
-            {/* Tabs: one per vehicle + comparison */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="flex-wrap h-auto gap-1 bg-muted/30 p-1">
                 {vehicles.map((v, i) => (

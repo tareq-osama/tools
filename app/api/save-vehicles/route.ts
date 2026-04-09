@@ -7,7 +7,7 @@ export async function POST(request: Request) {
 
     // Use the secure, non-public environment variable
     const apiKey = process.env.CORVEX_API_KEY;
-    const COLLECTION_SLUG = "vehicles"; // Ensure this matches your CMS
+    const COLLECTION_SLUG = "vehicle-calculator"; // Ensure this matches your CMS
 
     if (!apiKey) {
       return NextResponse.json(
