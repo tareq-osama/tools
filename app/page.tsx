@@ -15,6 +15,7 @@ import {
   CurrencyDollarIcon,
   SparklesIcon,
   PuzzlePieceIcon,
+  TruckIcon,
 } from "@heroicons/react/24/solid";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -67,6 +68,14 @@ const tools = [
       "Instantly calculate net margins, expenses, and break-even points.",
     icon: CurrencyDollarIcon,
     href: "/profit-margin-calculator",
+    available: true,
+  },
+  {
+    title: "Vehicle Calculator (TR)",
+    description:
+      "Compare motorbike & car purchases with 2026 Turkish taxes, fees, notary, insurance, and installment plans.",
+    icon: TruckIcon,
+    href: "/vehicle-calculator",
     available: true,
   },
 ];

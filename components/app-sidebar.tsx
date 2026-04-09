@@ -8,6 +8,7 @@ import {
   CursorArrowRaysIcon,
   PuzzlePieceIcon,
   ChartBarIcon,
+  TruckIcon,
 } from "@heroicons/react/24/solid";
 
 import { NavMain } from "@/components/nav-main";
@@ -64,6 +65,11 @@ const data = {
       title: "Marketing KPIs",
       url: "/marketing-kpis",
       icon: ChartBarIcon,
+    },
+    {
+      title: "Vehicle Calculator (TR)",
+      url: "/vehicle-calculator",
+      icon: TruckIcon,
     },
   ],
 };
