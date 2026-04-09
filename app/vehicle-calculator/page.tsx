@@ -54,6 +54,9 @@ import {
 } from "@/components/ui/input-group";
 import { Field, FieldLabel } from "@/components/ui/field";
 
+// NEW: Import the toast function from Sonner
+import { toast } from "sonner";
+
 const STORAGE_KEY = "vehicle-calculator-v2";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -1067,21 +1070,21 @@ export default function VehicleCalculatorPage() {
 
     try {
       const items = vehicles.map((v) => ({
-        // 1. System fields must be lowercase
+        // Map CMS required system fields
         title: v.name,
         slug:
           v.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") +
           "-" +
           v.id.split("-")[0],
 
-        // 2. Custom fields mapped EXACTLY to your Postman schema
+        // Map custom fields
         Name: v.name,
         "Image URL": v.imageUrl || "",
         "Purchase Link": v.purchaseLink || "",
         "Base Price": v.basePrice,
         "Down Payment": v.downPayment,
         "Installment Months": v.installmentMonths,
-        Number: v.annualInterestRate, // <-- Mapped to your accidental "Number" field name!
+        Number: v.annualInterestRate,
         "Fees Data": JSON.stringify(v.fees),
       }));
 
@@ -1096,13 +1099,18 @@ export default function VehicleCalculatorPage() {
       if (!res.ok) {
         const errData = await res.json();
         console.error("Server Route Failed:", errData);
-        alert(`Failed to push data: ${errData.error || "Check console"}`);
+        // Replace alert with toast.error
+        toast.error(`Failed to push data: ${errData.error || "Check console"}`);
       } else {
-        alert(`Successfully saved ${items.length} vehicles to Corvex CMS!`);
+        // Replace alert with toast.success
+        toast.success(
+          `Successfully saved ${items.length} vehicles to Corvex CMS!`,
+        );
       }
     } catch (error) {
       console.error("Network error:", error);
-      alert("A network error occurred while trying to save.");
+      // Replace alert with toast.error
+      toast.error("A network error occurred while trying to save.");
     } finally {
       setIsSyncing(false);
     }
@@ -1119,6 +1127,9 @@ export default function VehicleCalculatorPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
+    // Also adding a nice little toast here!
+    toast.success("JSON file downloaded successfully!");
   };
 
   const exportCSV = () => {
@@ -1154,6 +1165,9 @@ export default function VehicleCalculatorPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
+    // And here!
+    toast.success("CSV file downloaded successfully!");
   };
 
   // Prevent hydration mismatch errors
