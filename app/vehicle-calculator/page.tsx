@@ -29,6 +29,7 @@ import {
   PhotoIcon,
   LinkIcon,
   CurrencyDollarIcon,
+  ArrowDownTrayIcon,
 } from "@heroicons/react/24/solid";
 import {
   BarChart,
@@ -80,7 +81,6 @@ interface Vehicle {
 
 // ─── Turkish 2026 Default Templates ─────────────────────────────────────────
 
-// Updated to perfectly match the reference image provided
 const MOTORBIKE_FEES: Omit<Fee, "id">[] = [
   {
     name: "MTV (Motor Vehicle Tax) — Annual",
@@ -1020,7 +1020,7 @@ export default function VehicleCalculatorPage() {
     }
   });
 
-  const [usdRate, setUsdRate] = React.useState(35.5); // Default USD to TRY rate
+  const [usdRate, setUsdRate] = React.useState(35.5);
   const [activeTab, setActiveTab] = React.useState("vehicle-0");
 
   React.useEffect(() => {
@@ -1066,8 +1066,60 @@ export default function VehicleCalculatorPage() {
   };
 
   const reset = () => {
-    setVehicles(DEFAULT_STATE);
-    setActiveTab("vehicle-0");
+    if (
+      confirm("Are you sure you want to reset? You will lose unsaved data!")
+    ) {
+      setVehicles(DEFAULT_STATE);
+      setActiveTab("vehicle-0");
+    }
+  };
+
+  const exportJSON = () => {
+    const dataStr = JSON.stringify(vehicles, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vehicle-data-${new Date().toISOString().split("T")[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportCSV = () => {
+    const headers = [
+      "Name",
+      "Base Price",
+      "Down Payment",
+      "Months",
+      "Interest Rate",
+      "Image URL",
+      "Link",
+    ];
+    const rows = vehicles.map((v) => [
+      `"${v.name}"`,
+      v.basePrice,
+      v.downPayment,
+      v.installmentMonths,
+      v.annualInterestRate,
+      `"${v.imageUrl || ""}"`,
+      `"${v.purchaseLink || ""}"`,
+    ]);
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((e) => e.join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vehicle-data-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -1102,8 +1154,8 @@ export default function VehicleCalculatorPage() {
                   </div>
                 </div>
 
-                {/* Add vehicle buttons */}
-                <div className="flex flex-wrap gap-2 mt-3">
+                {/* Add & Export vehicle buttons */}
+                <div className="flex flex-wrap gap-2 mt-3 items-center">
                   <Button
                     size="sm"
                     variant="outline"
@@ -1120,10 +1172,30 @@ export default function VehicleCalculatorPage() {
                   >
                     <PlusIcon className="h-3.5 w-3.5" /> Add Car
                   </Button>
+
+                  <div className="w-px h-6 bg-border mx-1 hidden sm:block"></div>
+
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="gap-1.5 text-xs"
+                    onClick={exportJSON}
+                  >
+                    <ArrowDownTrayIcon className="h-3.5 w-3.5" /> JSON
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="gap-1.5 text-xs"
+                    onClick={exportCSV}
+                  >
+                    <ArrowDownTrayIcon className="h-3.5 w-3.5" /> CSV
+                  </Button>
+
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="gap-1.5 text-xs text-muted-foreground"
+                    className="gap-1.5 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 ml-auto"
                     onClick={reset}
                   >
                     <ArrowPathIcon className="h-3.5 w-3.5" /> Reset
