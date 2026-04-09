@@ -20,14 +20,15 @@ import {
   MinusIcon,
   TrashIcon,
   TruckIcon,
-  BanknotesIcon,
-  CalendarDaysIcon,
   DocumentDuplicateIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ArrowPathIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  PhotoIcon,
+  LinkIcon,
+  CurrencyDollarIcon,
 } from "@heroicons/react/24/solid";
 import {
   BarChart,
@@ -49,10 +50,9 @@ import {
   InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import NumberFlow from "@number-flow/react";
+import { Field, FieldLabel } from "@/components/ui/field";
 
-const STORAGE_KEY = "vehicle-calculator-v1";
+const STORAGE_KEY = "vehicle-calculator-v2";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -69,6 +69,8 @@ interface Fee {
 interface Vehicle {
   id: string;
   name: string;
+  imageUrl?: string;
+  purchaseLink?: string;
   basePrice: number;
   fees: Fee[];
   downPayment: number;
@@ -78,30 +80,97 @@ interface Vehicle {
 
 // ─── Turkish 2026 Default Templates ─────────────────────────────────────────
 
+// Updated to perfectly match the reference image provided
 const MOTORBIKE_FEES: Omit<Fee, "id">[] = [
-  { name: "ÖTV (Special Consumption Tax)", value: 37, type: "percent", enabled: true },
-  { name: "KDV (VAT)", value: 20, type: "percent", enabled: true },
-  { name: "MTV (Motor Vehicle Tax) — Annual", value: 3500, type: "fixed", enabled: true },
-  { name: "Zorunlu Trafik Sigortası (Mandatory Traffic Insurance)", value: 1800, type: "fixed", enabled: true },
-  { name: "Kasko (Comprehensive Insurance) — Annual", value: 8000, type: "fixed", enabled: true },
-  { name: "Noter Masrafları (Notary Fees)", value: 2500, type: "fixed", enabled: true },
-  { name: "Plaka Tescil (License Plate Registration)", value: 800, type: "fixed", enabled: true },
-  { name: "Trafik Belgesi (Traffic Document)", value: 350, type: "fixed", enabled: true },
-  { name: "Egzoz Muayenesi (Emission Inspection)", value: 250, type: "fixed", enabled: false },
+  {
+    name: "MTV (Motor Vehicle Tax) — Annual",
+    value: 3500,
+    type: "fixed",
+    enabled: false,
+  },
+  {
+    name: "Zorunlu Trafik Sigortası (Mandatory Traffic Insurance)",
+    value: 1800,
+    type: "fixed",
+    enabled: true,
+  },
+  {
+    name: "Noter Masrafları (Notary Fees)",
+    value: 2500,
+    type: "fixed",
+    enabled: true,
+  },
+  {
+    name: "Plaka Tescil (License Plate Registration)",
+    value: 800,
+    type: "fixed",
+    enabled: true,
+  },
+  {
+    name: "Trafik Belgesi (Traffic Document)",
+    value: 350,
+    type: "fixed",
+    enabled: true,
+  },
+  {
+    name: "Traffic Insurance (Istanbul Base Rate)",
+    value: 8000,
+    type: "fixed",
+    enabled: true,
+  },
   { name: "Helmet & Gear", value: 3000, type: "fixed", enabled: false },
 ];
 
 const CAR_FEES: Omit<Fee, "id">[] = [
-  { name: "ÖTV (Special Consumption Tax)", value: 45, type: "percent", enabled: true },
+  {
+    name: "ÖTV (Special Consumption Tax)",
+    value: 45,
+    type: "percent",
+    enabled: true,
+  },
   { name: "KDV (VAT)", value: 20, type: "percent", enabled: true },
-  { name: "MTV (Motor Vehicle Tax) — Annual", value: 12000, type: "fixed", enabled: true },
-  { name: "Zorunlu Trafik Sigortası (Mandatory Traffic Insurance)", value: 3500, type: "fixed", enabled: true },
-  { name: "Kasko (Comprehensive Insurance) — Annual", value: 25000, type: "fixed", enabled: true },
-  { name: "Noter Masrafları (Notary Fees)", value: 4500, type: "fixed", enabled: true },
-  { name: "Plaka Tescil (License Plate Registration)", value: 1500, type: "fixed", enabled: true },
-  { name: "Trafik Belgesi (Traffic Document)", value: 500, type: "fixed", enabled: true },
-  { name: "Araç Muayenesi (Vehicle Inspection — Periodic)", value: 1200, type: "fixed", enabled: false },
-  { name: "Vites / DSG Service", value: 2000, type: "fixed", enabled: false },
+  {
+    name: "MTV (Motor Vehicle Tax) — Annual",
+    value: 12000,
+    type: "fixed",
+    enabled: true,
+  },
+  {
+    name: "Zorunlu Trafik Sigortası (Mandatory Traffic Insurance)",
+    value: 3500,
+    type: "fixed",
+    enabled: true,
+  },
+  {
+    name: "Kasko (Comprehensive Insurance) — Annual",
+    value: 25000,
+    type: "fixed",
+    enabled: true,
+  },
+  {
+    name: "Noter Masrafları (Notary Fees)",
+    value: 4500,
+    type: "fixed",
+    enabled: true,
+  },
+  {
+    name: "Plaka Tescil (License Plate Registration)",
+    value: 1500,
+    type: "fixed",
+    enabled: true,
+  },
+  {
+    name: "Trafik Belgesi (Traffic Document)",
+    value: 500,
+    type: "fixed",
+    enabled: true,
+  },
+  {
+    name: "Araç Muayenesi (Vehicle Inspection)",
+    value: 1200,
+    type: "fixed",
+    enabled: false,
+  },
 ];
 
 function makeFees(templates: Omit<Fee, "id">[]): Fee[] {
@@ -112,6 +181,8 @@ function makeVehicle(name: string, type: "motorbike" | "car"): Vehicle {
   return {
     id: crypto.randomUUID(),
     name,
+    imageUrl: "",
+    purchaseLink: "",
     basePrice: type === "motorbike" ? 120000 : 500000,
     fees: makeFees(type === "motorbike" ? MOTORBIKE_FEES : CAR_FEES),
     downPayment: 0,
@@ -131,9 +202,7 @@ function calculateVehicleCosts(v: Vehicle) {
   for (const fee of v.fees) {
     if (!fee.enabled) continue;
     const amount =
-      fee.type === "percent"
-        ? (v.basePrice * fee.value) / 100
-        : fee.value;
+      fee.type === "percent" ? (v.basePrice * fee.value) / 100 : fee.value;
     totalFees += amount;
     feeBreakdown.push({ name: fee.name, amount, type: fee.type });
   }
@@ -185,14 +254,6 @@ function fmt(n: number) {
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-xs font-bold text-muted-foreground/70 uppercase tracking-wider pb-1 border-b mb-3">
-      {children}
-    </p>
-  );
-}
 
 function KpiCard({
   label,
@@ -254,8 +315,13 @@ function NumericField({
       </div>
       <InputGroup className="hover:border-primary/40 transition-colors w-full">
         {prefix && (
-          <InputGroupAddon align="inline-start" className="bg-muted/30 border-r px-2.5">
-            <InputGroupText className="font-semibold text-xs">{prefix}</InputGroupText>
+          <InputGroupAddon
+            align="inline-start"
+            className="bg-muted/30 border-r px-2.5"
+          >
+            <InputGroupText className="font-semibold text-xs">
+              {prefix}
+            </InputGroupText>
           </InputGroupAddon>
         )}
         <InputGroupInput
@@ -267,11 +333,19 @@ function NumericField({
           min={min}
         />
         {suffix && (
-          <InputGroupAddon align="inline-end" className="bg-muted/30 border-l px-2.5">
-            <InputGroupText className="font-semibold text-xs">{suffix}</InputGroupText>
+          <InputGroupAddon
+            align="inline-end"
+            className="bg-muted/30 border-l px-2.5"
+          >
+            <InputGroupText className="font-semibold text-xs">
+              {suffix}
+            </InputGroupText>
           </InputGroupAddon>
         )}
-        <InputGroupAddon align="inline-end" className="p-0 border-l overflow-hidden bg-muted/10 h-full">
+        <InputGroupAddon
+          align="inline-end"
+          className="p-0 border-l overflow-hidden bg-muted/10 h-full"
+        >
           <InputGroupButton
             onClick={() => onChange(Math.max(min, value - step))}
             className="h-full rounded-none border-r w-8 hover:bg-muted/50 active:bg-muted/80 transition-colors"
@@ -343,10 +417,10 @@ function FeeRow({
           <button
             onClick={() => onUpdate({ ...fee, type: "fixed" })}
             className={cn(
-              "px-2.5 text-xs font-semibold transition-colors",
+              "px-2.5 text-xs font-semibold transition-colors flex items-center justify-center",
               fee.type === "fixed"
                 ? "bg-primary text-primary-foreground"
-                : "hover:bg-muted/50",
+                : "bg-muted/20 hover:bg-muted/50 text-muted-foreground",
             )}
           >
             ₺
@@ -354,10 +428,10 @@ function FeeRow({
           <button
             onClick={() => onUpdate({ ...fee, type: "percent" })}
             className={cn(
-              "px-2.5 text-xs font-semibold transition-colors border-l",
+              "px-2.5 text-xs font-semibold transition-colors border-l flex items-center justify-center",
               fee.type === "percent"
                 ? "bg-primary text-primary-foreground"
-                : "hover:bg-muted/50",
+                : "bg-muted/20 hover:bg-muted/50 text-muted-foreground",
             )}
           >
             %
@@ -383,12 +457,14 @@ function FeeRow({
 
 function VehiclePanel({
   vehicle,
+  usdRate,
   onUpdate,
   onDuplicate,
   onRemove,
   showRemove,
 }: {
   vehicle: Vehicle;
+  usdRate: number;
   onUpdate: (v: Vehicle) => void;
   onDuplicate: () => void;
   onRemove: () => void;
@@ -427,216 +503,359 @@ function VehiclePanel({
       name: f.name.split("(")[0].trim(),
       value: f.amount,
       fill: [
-        "#f87171", "#fb923c", "#facc15", "#4ade80", "#a78bfa",
-        "#34d399", "#f472b6", "#94a3b8",
+        "#f87171",
+        "#fb923c",
+        "#facc15",
+        "#4ade80",
+        "#a78bfa",
+        "#34d399",
+        "#f472b6",
+        "#94a3b8",
       ][i % 8],
     })),
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Input
-          className="text-lg font-bold flex-1 border-0 border-b rounded-none px-0 focus-visible:ring-0 bg-transparent"
-          value={vehicle.name}
-          onChange={(e) => onUpdate({ ...vehicle, name: e.target.value })}
-          placeholder="Vehicle name..."
-        />
-        <Button size="sm" variant="ghost" onClick={onDuplicate} title="Duplicate">
-          <DocumentDuplicateIcon className="h-4 w-4" />
-        </Button>
-        {showRemove && (
-          <Button size="sm" variant="ghost" onClick={onRemove} className="text-red-500 hover:text-red-600">
-            <TrashIcon className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiCard label="Base Price" value={calc.basePrice} />
-        <KpiCard label="Total Fees" value={calc.totalFees} highlight="red" />
-        <KpiCard label="Total Cost" value={calc.totalCost} highlight="blue" />
-        <KpiCard
-          label="Monthly Payment"
-          value={calc.monthlyPayment}
-          highlight="green"
-          sub={vehicle.installmentMonths > 0 ? `× ${vehicle.installmentMonths} months` : "Cash purchase"}
-        />
-      </div>
-
-      {/* Base price */}
-      <Card className="shadow-none border-border/50">
-        <CardHeader className="pb-2 pt-4 px-4">
-          <CardTitle className="text-sm">Base Price</CardTitle>
-          <CardDescription className="text-xs">
-            The listed price before any taxes or fees
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-4 pb-4">
-          <NumericField
-            label="Vehicle Base Price"
-            value={vehicle.basePrice}
-            onChange={(val) => onUpdate({ ...vehicle, basePrice: val })}
-            prefix="₺"
-            step={5000}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Fees */}
-      <Card className="shadow-none border-border/50">
-        <CardHeader className="pb-2 pt-4 px-4">
-          <button
-            className="flex items-center justify-between w-full"
-            onClick={() => setFeesOpen((p) => !p)}
-          >
-            <div className="text-left">
-              <CardTitle className="text-sm">Taxes, Fees & Expenses</CardTitle>
-              <CardDescription className="text-xs mt-0.5">
-                {vehicle.fees.filter((f) => f.enabled).length} active ·{" "}
-                Total: ₺{fmt(calc.totalFees)}
-              </CardDescription>
-            </div>
-            {feesOpen ? (
-              <ChevronUpIcon className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
-            )}
-          </button>
-        </CardHeader>
-        {feesOpen && (
-          <CardContent className="px-4 pb-4 space-y-2">
-            {vehicle.fees.map((fee) => (
-              <FeeRow
-                key={fee.id}
-                fee={fee}
-                basePrice={vehicle.basePrice}
-                onUpdate={(updated) => updateFee(fee.id, updated)}
-                onRemove={() => removeFee(fee.id)}
-              />
-            ))}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full mt-2 border-dashed text-xs gap-1.5"
-              onClick={addFee}
-            >
-              <PlusIcon className="h-3.5 w-3.5" /> Add Fee / Expense
-            </Button>
-          </CardContent>
-        )}
-      </Card>
-
-      {/* Financing */}
-      <Card className="shadow-none border-border/50">
-        <CardHeader className="pb-2 pt-4 px-4">
-          <CardTitle className="text-sm">Financing / Installments</CardTitle>
-          <CardDescription className="text-xs">
-            Leave installment months at 0 for cash purchase
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-4 pb-4 space-y-4">
-          <NumericField
-            label="Down Payment"
-            value={vehicle.downPayment}
-            onChange={(val) => onUpdate({ ...vehicle, downPayment: val })}
-            prefix="₺"
-            step={5000}
-            description="Amount paid upfront"
-          />
-          <NumericField
-            label="Installment Period"
-            value={vehicle.installmentMonths}
-            onChange={(val) => onUpdate({ ...vehicle, installmentMonths: val })}
-            suffix="months"
-            step={6}
-            min={0}
-            description="Number of monthly payments (0 = cash)"
-          />
-          <NumericField
-            label="Annual Interest Rate"
-            value={vehicle.annualInterestRate}
-            onChange={(val) => onUpdate({ ...vehicle, annualInterestRate: val })}
-            suffix="%"
-            step={1}
-            min={0}
-            description="Bank loan annual interest rate"
-          />
-
-          {vehicle.installmentMonths > 0 && (
-            <div className="rounded-xl border bg-muted/20 p-4 space-y-2 text-sm">
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Loan Amount</span>
-                <span className="font-semibold">₺{fmt(calc.loanAmount)}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Monthly Payment</span>
-                <span className="font-bold text-emerald-500">₺{fmt(calc.monthlyPayment)}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Total Interest Paid</span>
-                <span className="font-semibold text-red-500">₺{fmt(calc.totalInterest)}</span>
-              </div>
-              <div className="flex justify-between text-xs border-t pt-2 mt-1">
-                <span className="text-muted-foreground font-semibold">Total You Pay</span>
-                <span className="font-bold text-blue-500">₺{fmt(calc.totalPayable)}</span>
-              </div>
+      {/* Top Section: Media & Headline */}
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Left Side: Image & Links */}
+        <div className="w-full md:w-1/3 flex flex-col gap-3">
+          {vehicle.imageUrl ? (
+            <img
+              src={vehicle.imageUrl}
+              alt="Vehicle Preview"
+              className="w-full h-44 object-cover rounded-xl border bg-muted/20 shadow-sm"
+            />
+          ) : (
+            <div className="w-full h-44 flex flex-col items-center justify-center bg-muted/20 rounded-xl border border-dashed border-muted-foreground/40 text-muted-foreground gap-2">
+              <PhotoIcon className="h-8 w-8 opacity-50" />
+              <span className="text-xs font-medium">Add Image URL below</span>
             </div>
           )}
-        </CardContent>
-      </Card>
 
-      {/* Pie chart breakdown */}
-      <Card className="shadow-none border-border/50">
-        <CardHeader className="pb-2 pt-4 px-4">
-          <CardTitle className="text-sm">Cost Breakdown</CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 pb-4">
-          <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={90}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, i) => (
-                    <Cell key={i} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(v: number) => `₺${fmt(v)}`}
-                  contentStyle={{ fontSize: 11 }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="space-y-2">
+            <Input
+              placeholder="Paste Image URL..."
+              value={vehicle.imageUrl}
+              onChange={(e) =>
+                onUpdate({ ...vehicle, imageUrl: e.target.value })
+              }
+              className="text-xs h-8 bg-card"
+            />
+            <div className="flex gap-2">
+              <Input
+                placeholder="Paste Purchase Link..."
+                value={vehicle.purchaseLink}
+                onChange={(e) =>
+                  onUpdate({ ...vehicle, purchaseLink: e.target.value })
+                }
+                className="text-xs h-8 flex-1 bg-card"
+              />
+              {vehicle.purchaseLink && (
+                <Button size="sm" className="h-8 px-3" asChild>
+                  <a
+                    href={vehicle.purchaseLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Open Link"
+                  >
+                    <LinkIcon className="h-3.5 w-3.5" />
+                  </a>
+                </Button>
+              )}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {pieData.map((d, i) => (
-              <div key={i} className="flex items-center gap-1.5 text-xs">
-                <div
-                  className="h-2.5 w-2.5 rounded-full shrink-0"
-                  style={{ background: d.fill }}
-                />
-                <span className="text-muted-foreground truncate max-w-[120px]">{d.name}</span>
+        </div>
+
+        {/* Right Side: Headline & Giant Total Banner */}
+        <div className="flex-1 flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <Input
+              className="text-2xl font-bold flex-1 border-0 border-b rounded-none px-0 focus-visible:ring-0 bg-transparent h-auto py-1"
+              value={vehicle.name}
+              onChange={(e) => onUpdate({ ...vehicle, name: e.target.value })}
+              placeholder="Vehicle name..."
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onDuplicate}
+              title="Duplicate"
+              className="shrink-0 h-9"
+            >
+              <DocumentDuplicateIcon className="h-4 w-4 mr-1.5" /> Duplicate
+            </Button>
+            {showRemove && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onRemove}
+                className="shrink-0 h-9 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+              >
+                <TrashIcon className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
+          {/* Prominent Green Total Cost Banner */}
+          <div className="bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/50 p-5 rounded-2xl flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mt-auto">
+            <div>
+              <p className="text-xs font-bold text-emerald-700/70 dark:text-emerald-400/70 uppercase tracking-wider mb-1">
+                Total Cash Cost
+              </p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                  ₺{fmt(calc.totalCost)}
+                </span>
               </div>
-            ))}
+            </div>
+
+            <div className="h-px w-full sm:w-px sm:h-12 bg-emerald-200 dark:bg-emerald-800/50 hidden sm:block"></div>
+
+            <div className="sm:text-right">
+              <p className="text-[10px] font-bold text-emerald-700/60 dark:text-emerald-400/60 uppercase tracking-wider mb-1">
+                USD Equivalent
+              </p>
+              <span className="text-2xl font-bold text-emerald-600/80 dark:text-emerald-400/80">
+                ${fmt(calc.totalCost / usdRate)}
+              </span>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      {/* Sub KPIs */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <KpiCard label="Base Price" value={calc.basePrice} />
+        <KpiCard label="Total Fees" value={calc.totalFees} highlight="red" />
+        <KpiCard
+          label="Monthly Installment"
+          value={calc.monthlyPayment}
+          highlight={calc.monthlyPayment > 0 ? "blue" : "default"}
+          sub={
+            vehicle.installmentMonths > 0
+              ? `× ${vehicle.installmentMonths} months ($${fmt(calc.monthlyPayment / usdRate)})`
+              : "Cash purchase"
+          }
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          {/* Base price */}
+          <Card className="shadow-none border-border/50">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="text-sm">Base Price</CardTitle>
+              <CardDescription className="text-xs">
+                The listed price before any taxes or fees
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <NumericField
+                label="Vehicle Base Price"
+                value={vehicle.basePrice}
+                onChange={(val) => onUpdate({ ...vehicle, basePrice: val })}
+                prefix="₺"
+                step={5000}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Financing */}
+          <Card className="shadow-none border-border/50">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="text-sm">
+                Financing / Installments
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Leave installment months at 0 for cash purchase
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 space-y-4">
+              <NumericField
+                label="Down Payment"
+                value={vehicle.downPayment}
+                onChange={(val) => onUpdate({ ...vehicle, downPayment: val })}
+                prefix="₺"
+                step={5000}
+                description="Amount paid upfront"
+              />
+              <NumericField
+                label="Installment Period"
+                value={vehicle.installmentMonths}
+                onChange={(val) =>
+                  onUpdate({ ...vehicle, installmentMonths: val })
+                }
+                suffix="months"
+                step={6}
+                min={0}
+                description="Number of monthly payments (0 = cash)"
+              />
+              <NumericField
+                label="Annual Interest Rate"
+                value={vehicle.annualInterestRate}
+                onChange={(val) =>
+                  onUpdate({ ...vehicle, annualInterestRate: val })
+                }
+                suffix="%"
+                step={1}
+                min={0}
+                description="Bank loan annual interest rate"
+              />
+
+              {vehicle.installmentMonths > 0 && (
+                <div className="rounded-xl border bg-muted/20 p-4 space-y-2 text-sm">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Loan Amount</span>
+                    <span className="font-semibold">
+                      ₺{fmt(calc.loanAmount)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">
+                      Monthly Payment
+                    </span>
+                    <span className="font-bold text-blue-500">
+                      ₺{fmt(calc.monthlyPayment)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">
+                      Total Interest Paid
+                    </span>
+                    <span className="font-semibold text-red-500">
+                      ₺{fmt(calc.totalInterest)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs border-t pt-2 mt-1">
+                    <span className="text-muted-foreground font-semibold">
+                      Total You Pay
+                    </span>
+                    <div className="text-right">
+                      <span className="font-bold text-emerald-600 block">
+                        ₺{fmt(calc.totalPayable)}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        ${fmt(calc.totalPayable / usdRate)} USD
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          {/* Fees */}
+          <Card className="shadow-none border-border/50">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <button
+                className="flex items-center justify-between w-full"
+                onClick={() => setFeesOpen((p) => !p)}
+              >
+                <div className="text-left">
+                  <CardTitle className="text-sm">
+                    Taxes, Fees & Expenses
+                  </CardTitle>
+                  <CardDescription className="text-xs mt-0.5">
+                    {vehicle.fees.filter((f) => f.enabled).length} active ·{" "}
+                    Total: ₺{fmt(calc.totalFees)}
+                  </CardDescription>
+                </div>
+                {feesOpen ? (
+                  <ChevronUpIcon className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
+                )}
+              </button>
+            </CardHeader>
+            {feesOpen && (
+              <CardContent className="px-4 pb-4 space-y-2">
+                {vehicle.fees.map((fee) => (
+                  <FeeRow
+                    key={fee.id}
+                    fee={fee}
+                    basePrice={vehicle.basePrice}
+                    onUpdate={(updated) => updateFee(fee.id, updated)}
+                    onRemove={() => removeFee(fee.id)}
+                  />
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-2 border-dashed text-xs gap-1.5"
+                  onClick={addFee}
+                >
+                  <PlusIcon className="h-3.5 w-3.5" /> Add Fee / Expense
+                </Button>
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Pie chart breakdown */}
+          <Card className="shadow-none border-border/50">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="text-sm">Cost Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <div className="h-52">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={90}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, i) => (
+                        <Cell key={i} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(v: number) => `₺${fmt(v)}`}
+                      contentStyle={{ fontSize: 11 }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {pieData.map((d, i) => (
+                  <div key={i} className="flex items-center gap-1.5 text-xs">
+                    <div
+                      className="h-2.5 w-2.5 rounded-full shrink-0"
+                      style={{ background: d.fill }}
+                    />
+                    <span
+                      className="text-muted-foreground truncate max-w-[120px]"
+                      title={d.name}
+                    >
+                      {d.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
 
 // ─── Comparison View ──────────────────────────────────────────────────────────
 
-function ComparisonView({ vehicles }: { vehicles: Vehicle[] }) {
+function ComparisonView({
+  vehicles,
+  usdRate,
+}: {
+  vehicles: Vehicle[];
+  usdRate: number;
+}) {
   if (vehicles.length < 2)
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
@@ -647,7 +866,11 @@ function ComparisonView({ vehicles }: { vehicles: Vehicle[] }) {
       </div>
     );
 
-  const calcs = vehicles.map((v) => ({ ...calculateVehicleCosts(v), name: v.name }));
+  const calcs = vehicles.map((v) => ({
+    ...calculateVehicleCosts(v),
+    name: v.name,
+    img: v.imageUrl,
+  }));
 
   const barData = calcs.map((c) => ({
     name: c.name,
@@ -655,8 +878,6 @@ function ComparisonView({ vehicles }: { vehicles: Vehicle[] }) {
     "Total Fees": c.totalFees,
     "Total Interest": c.totalInterest,
   }));
-
-  const COLORS = ["#60a5fa", "#f87171", "#4ade80", "#fb923c", "#a78bfa"];
 
   const best = calcs.reduce((a, b) => (a.totalCost < b.totalCost ? a : b));
 
@@ -667,13 +888,24 @@ function ComparisonView({ vehicles }: { vehicles: Vehicle[] }) {
           <Card
             key={i}
             className={cn(
-              "shadow-none border-border/50",
+              "shadow-none border-border/50 overflow-hidden",
               c.name === best.name && "ring-2 ring-emerald-500/60",
             )}
           >
+            {c.img && (
+              <div className="h-24 w-full bg-muted/20 border-b">
+                <img
+                  src={c.img}
+                  alt={c.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
             <CardHeader className="pb-2 pt-4 px-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold">{c.name}</CardTitle>
+                <CardTitle className="text-sm font-semibold">
+                  {c.name}
+                </CardTitle>
                 {c.name === best.name && (
                   <Badge className="text-[10px] bg-emerald-500 text-white">
                     Best Value
@@ -688,22 +920,35 @@ function ComparisonView({ vehicles }: { vehicles: Vehicle[] }) {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total Fees</span>
-                <span className="font-semibold text-red-500">₺{fmt(c.totalFees)}</span>
+                <span className="font-semibold text-red-500">
+                  ₺{fmt(c.totalFees)}
+                </span>
               </div>
               <div className="flex justify-between border-t pt-2">
                 <span className="font-semibold">Total Cost</span>
-                <span className="font-bold text-blue-500">₺{fmt(c.totalCost)}</span>
+                <div className="text-right">
+                  <span className="font-bold text-emerald-600 block">
+                    ₺{fmt(c.totalCost)}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    ${fmt(c.totalCost / usdRate)}
+                  </span>
+                </div>
               </div>
               {c.monthlyPayment > 0 && (
-                <div className="flex justify-between">
+                <div className="flex justify-between border-t pt-2 mt-1">
                   <span className="text-muted-foreground">Monthly</span>
-                  <span className="font-bold text-emerald-500">₺{fmt(c.monthlyPayment)}</span>
+                  <span className="font-bold text-blue-500">
+                    ₺{fmt(c.monthlyPayment)}
+                  </span>
                 </div>
               )}
               {c.totalInterest > 0 && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Interest Cost</span>
-                  <span className="font-semibold text-orange-500">₺{fmt(c.totalInterest)}</span>
+                  <span className="font-semibold text-orange-500">
+                    ₺{fmt(c.totalInterest)}
+                  </span>
                 </div>
               )}
             </CardContent>
@@ -720,7 +965,10 @@ function ComparisonView({ vehicles }: { vehicles: Vehicle[] }) {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={barData} barSize={24} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                />
                 <XAxis
                   dataKey="name"
                   tick={{ fontSize: 11 }}
@@ -735,9 +983,21 @@ function ComparisonView({ vehicles }: { vehicles: Vehicle[] }) {
                   formatter={(v: number) => `₺${fmt(v)}`}
                   contentStyle={{ fontSize: 11 }}
                 />
-                <Bar dataKey="Base Price" fill="#60a5fa" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="Total Fees" fill="#f87171" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="Total Interest" fill="#fb923c" radius={[3, 3, 0, 0]} />
+                <Bar
+                  dataKey="Base Price"
+                  fill="#60a5fa"
+                  radius={[3, 3, 0, 0]}
+                />
+                <Bar
+                  dataKey="Total Fees"
+                  fill="#f87171"
+                  radius={[3, 3, 0, 0]}
+                />
+                <Bar
+                  dataKey="Total Interest"
+                  fill="#fb923c"
+                  radius={[3, 3, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -760,6 +1020,7 @@ export default function VehicleCalculatorPage() {
     }
   });
 
+  const [usdRate, setUsdRate] = React.useState(35.5); // Default USD to TRY rate
   const [activeTab, setActiveTab] = React.useState("vehicle-0");
 
   React.useEffect(() => {
@@ -770,11 +1031,17 @@ export default function VehicleCalculatorPage() {
     setVehicles((vs) => vs.map((v) => (v.id === id ? updated : v)));
 
   const addVehicle = (type: "motorbike" | "car") => {
-    const idx = vehicles.filter((v) => v.name.startsWith(type === "motorbike" ? "Bike" : "Car")).length;
-    const names = type === "motorbike"
-      ? ["Bike A", "Bike B", "Bike C", "Bike D"]
-      : ["Car A", "Car B", "Car C", "Car D"];
-    const newV = makeVehicle(names[idx] ?? `Vehicle ${vehicles.length + 1}`, type);
+    const idx = vehicles.filter((v) =>
+      v.name.startsWith(type === "motorbike" ? "Bike" : "Car"),
+    ).length;
+    const names =
+      type === "motorbike"
+        ? ["Bike A", "Bike B", "Bike C", "Bike D"]
+        : ["Car A", "Car B", "Car C", "Car D"];
+    const newV = makeVehicle(
+      names[idx] ?? `Vehicle ${vehicles.length + 1}`,
+      type,
+    );
     setVehicles((vs) => [...vs, newV]);
     setActiveTab(`vehicle-${vehicles.length}`);
   };
@@ -817,60 +1084,85 @@ export default function VehicleCalculatorPage() {
         <SiteHeader />
         <div className="flex flex-1 flex-col">
           <div className="flex flex-1 flex-col gap-4 p-4 md:p-8 max-w-5xl mx-auto w-full">
-
             {/* Page header */}
-            <div className="flex flex-col gap-2 pb-6 border-b">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/5 rounded-xl text-primary">
-                  <TruckIcon className="h-5 w-5" />
+            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 pb-6 border-b">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/5 rounded-xl text-primary">
+                    <TruckIcon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold tracking-tight">
+                      Turkey Vehicle Purchase Calculator
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                      Compare motorbike &amp; car purchases with real 2026
+                      Turkish taxes, fees, and financing.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight">
-                    Turkey Vehicle Purchase Calculator
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Compare motorbike &amp; car purchases with real 2026 Turkish taxes, fees, and financing.
-                  </p>
+
+                {/* Add vehicle buttons */}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 text-xs"
+                    onClick={() => addVehicle("motorbike")}
+                  >
+                    <PlusIcon className="h-3.5 w-3.5" /> Add Motorbike
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 text-xs"
+                    onClick={() => addVehicle("car")}
+                  >
+                    <PlusIcon className="h-3.5 w-3.5" /> Add Car
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="gap-1.5 text-xs text-muted-foreground"
+                    onClick={reset}
+                  >
+                    <ArrowPathIcon className="h-3.5 w-3.5" /> Reset
+                  </Button>
                 </div>
               </div>
 
-              {/* Add vehicle buttons */}
-              <div className="flex flex-wrap gap-2 mt-3">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1.5 text-xs"
-                  onClick={() => addVehicle("motorbike")}
-                >
-                  <PlusIcon className="h-3.5 w-3.5" /> Add Motorbike
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1.5 text-xs"
-                  onClick={() => addVehicle("car")}
-                >
-                  <PlusIcon className="h-3.5 w-3.5" /> Add Car
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="gap-1.5 text-xs text-muted-foreground"
-                  onClick={reset}
-                >
-                  <ArrowPathIcon className="h-3.5 w-3.5" /> Reset
-                </Button>
+              {/* Currency Settings */}
+              <div className="flex flex-col gap-1.5 bg-card p-3 rounded-xl border w-full md:w-auto shadow-sm">
+                <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider flex items-center gap-1">
+                  <CurrencyDollarIcon className="h-3.5 w-3.5" />
+                  Exchange Rate
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">1 USD = </span>
+                  <Input
+                    type="number"
+                    value={usdRate}
+                    onChange={(e) =>
+                      setUsdRate(Math.max(1, Number(e.target.value)))
+                    }
+                    className="h-8 w-20 text-sm font-bold text-center"
+                    step={0.1}
+                  />
+                  <span className="text-sm font-semibold">₺</span>
+                </div>
               </div>
+            </div>
 
-              {/* Info note */}
-              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 mt-2">
-                <ExclamationTriangleIcon className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-500" />
-                <span>
-                  Pre-loaded with 2026 Turkish fee templates (ÖTV, KDV, MTV, Noter, Sigorta, Tescil, etc.).
-                  Fees with a <strong>%</strong> badge are calculated as a percentage of the base price.
-                  Disable any fee by clicking the circle icon.
-                </span>
-              </div>
+            {/* Info note */}
+            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/30 rounded-lg p-3">
+              <ExclamationTriangleIcon className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-500" />
+              <span>
+                Pre-loaded with exactly matched 2026 Turkish fee templates.
+                Update the <strong>USD</strong> rate at the top right to
+                dynamically auto-convert the total values. Add an image URL and
+                a purchase link inside the vehicle panels to keep track of the
+                listings.
+              </span>
             </div>
 
             {/* Tabs: one per vehicle + comparison */}
@@ -897,6 +1189,7 @@ export default function VehicleCalculatorPage() {
                 <TabsContent key={v.id} value={`vehicle-${i}`} className="mt-6">
                   <VehiclePanel
                     vehicle={v}
+                    usdRate={usdRate}
                     onUpdate={(updated) => updateVehicle(v.id, updated)}
                     onDuplicate={() => duplicateVehicle(i)}
                     onRemove={() => removeVehicle(i)}
@@ -906,10 +1199,9 @@ export default function VehicleCalculatorPage() {
               ))}
 
               <TabsContent value="compare" className="mt-6">
-                <ComparisonView vehicles={vehicles} />
+                <ComparisonView vehicles={vehicles} usdRate={usdRate} />
               </TabsContent>
             </Tabs>
-
           </div>
         </div>
       </SidebarInset>
