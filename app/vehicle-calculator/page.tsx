@@ -1077,18 +1077,9 @@ export default function VehicleCalculatorPage() {
     }
   };
 
-  // ─── NEW: SAVE TO CMS API FUNCTION ──────────────────────────────────────────
+  // ─── UPDATED: SAVE TO CMS API FUNCTION ──────────────────────────────────────
 
   const saveToCMS = async () => {
-    const apiKey = process.env.NEXT_PUBLIC_CORVEX_API_KEY;
-
-    if (!apiKey) {
-      alert(
-        "Missing API Key! Please ensure NEXT_PUBLIC_CORVEX_API_KEY is in your .env file.",
-      );
-      return;
-    }
-
     setIsSyncing(true);
 
     try {
@@ -1103,22 +1094,19 @@ export default function VehicleCalculatorPage() {
         "Fees Data": JSON.stringify(v.fees),
       }));
 
-      const res = await fetch(
-        `https://cms.usecorvex.com/api/cms/collections/${COLLECTION_SLUG}/items`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": apiKey,
-          },
-          body: JSON.stringify({ items }),
+      // We call our own Next.js API route instead of Corvex directly
+      const res = await fetch("/api/save-vehicles", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({ items }),
+      });
 
       if (!res.ok) {
         const errData = await res.json();
-        console.error("CMS Push Failed:", errData);
-        alert("Failed to push data to CMS. Check the console for details.");
+        console.error("Server Route Failed:", errData);
+        alert(`Failed to push data: ${errData.error || "Check console"}`);
       } else {
         alert(`Successfully saved ${items.length} vehicles to Corvex CMS!`);
       }
@@ -1129,7 +1117,6 @@ export default function VehicleCalculatorPage() {
       setIsSyncing(false);
     }
   };
-
   const exportJSON = () => {
     const dataStr = JSON.stringify(vehicles, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
