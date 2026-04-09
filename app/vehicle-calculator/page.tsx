@@ -30,6 +30,7 @@ import {
   LinkIcon,
   CurrencyDollarIcon,
   ArrowDownTrayIcon,
+  CloudArrowUpIcon, // <-- NEW IMPORT
 } from "@heroicons/react/24/solid";
 import {
   BarChart,
@@ -54,6 +55,9 @@ import {
 import { Field, FieldLabel } from "@/components/ui/field";
 
 const STORAGE_KEY = "vehicle-calculator-v2";
+
+// Make sure this matches the slug of your collection in Corvex exactly
+const COLLECTION_SLUG = "vehicles";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -243,8 +247,6 @@ function calculateVehicleCosts(v: Vehicle) {
     feeBreakdown,
   };
 }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function fmt(n: number) {
   return new Intl.NumberFormat("tr-TR", {
@@ -1022,6 +1024,7 @@ export default function VehicleCalculatorPage() {
 
   const [usdRate, setUsdRate] = React.useState(35.5);
   const [activeTab, setActiveTab] = React.useState("vehicle-0");
+  const [isSyncing, setIsSyncing] = React.useState(false); // NEW: Track sync state
 
   React.useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles));
@@ -1071,6 +1074,59 @@ export default function VehicleCalculatorPage() {
     ) {
       setVehicles(DEFAULT_STATE);
       setActiveTab("vehicle-0");
+    }
+  };
+
+  // ─── NEW: SAVE TO CMS API FUNCTION ──────────────────────────────────────────
+
+  const saveToCMS = async () => {
+    const apiKey = process.env.NEXT_PUBLIC_CORVEX_API_KEY;
+
+    if (!apiKey) {
+      alert(
+        "Missing API Key! Please ensure NEXT_PUBLIC_CORVEX_API_KEY is in your .env file.",
+      );
+      return;
+    }
+
+    setIsSyncing(true);
+
+    try {
+      const items = vehicles.map((v) => ({
+        Name: v.name,
+        "Image URL": v.imageUrl || "",
+        "Purchase Link": v.purchaseLink || "",
+        "Base Price": v.basePrice,
+        "Down Payment": v.downPayment,
+        "Installment Months": v.installmentMonths,
+        "Annual Interest Rate": v.annualInterestRate,
+        "Fees Data": JSON.stringify(v.fees),
+      }));
+
+      const res = await fetch(
+        `https://cms.usecorvex.com/api/cms/collections/${COLLECTION_SLUG}/items`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
+          },
+          body: JSON.stringify({ items }),
+        },
+      );
+
+      if (!res.ok) {
+        const errData = await res.json();
+        console.error("CMS Push Failed:", errData);
+        alert("Failed to push data to CMS. Check the console for details.");
+      } else {
+        alert(`Successfully saved ${items.length} vehicles to Corvex CMS!`);
+      }
+    } catch (error) {
+      console.error("Network error:", error);
+      alert("A network error occurred while trying to save.");
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -1174,6 +1230,18 @@ export default function VehicleCalculatorPage() {
                   </Button>
 
                   <div className="w-px h-6 bg-border mx-1 hidden sm:block"></div>
+
+                  {/* SAVE TO CMS BUTTON */}
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={saveToCMS}
+                    disabled={isSyncing}
+                  >
+                    <CloudArrowUpIcon className="h-3.5 w-3.5" />
+                    {isSyncing ? "Saving..." : "Save to CMS"}
+                  </Button>
 
                   <Button
                     size="sm"
